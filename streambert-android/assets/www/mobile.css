@@ -1,0 +1,747 @@
+/* Streambert Mobile - phone-first layout for the Android WebView build.
+ *
+ * The upstream UI is a desktop Electron app: a fixed left rail, a 500px hero
+ * and a mouse-sized detail page. This stylesheet converts those parts into a
+ * native-feeling phone layout without touching the React application code.
+ */
+html,
+body,
+#root {
+  height: 100%;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+/* The Electron <webview> becomes a tappable placeholder that opens the
+   native full-screen player. */
+webview {
+  display: block;
+  position: absolute;
+  background: #050505;
+}
+
+.sb-mobile-player-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  cursor: pointer;
+  background:
+    radial-gradient(circle at center, rgba(229, 9, 20, 0.16), transparent 55%),
+    #050505;
+  color: #f0f0f0;
+  font-family: "DM Sans", sans-serif;
+  z-index: 5;
+}
+
+.sb-mobile-player-play {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-left: 6px;
+  font-size: 30px;
+  color: #fff;
+  background: rgba(229, 9, 20, 0.92);
+  box-shadow: 0 0 38px rgba(229, 9, 20, 0.45);
+}
+
+.sb-mobile-player-caption {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+}
+
+.sb-mobile-player-hint {
+  font-size: 12px;
+  color: #909090;
+}
+
+/* Touch targets */
+button,
+a,
+.card,
+.sidebar-btn,
+.source-dropdown__item {
+  touch-action: manipulation;
+}
+
+/* -------------------------------------------------------------------------
+   Phone layout
+   ------------------------------------------------------------------------- */
+@media (max-width: 900px) {
+  :root {
+    --sidebar: 0px;
+  }
+
+  /* ---- Bottom navigation --------------------------------------------- */
+  .sidebar {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: space-evenly;
+    gap: 2px;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 150;
+  }
+
+  .sidebar-logo,
+  .sidebar-sep,
+  .sidebar-saved {
+    display: none !important;
+  }
+
+  /* Let the Settings button join the main row. */
+  .sidebar-bottom {
+    display: contents;
+  }
+
+  .sidebar-btn {
+    flex: 1 1 0;
+    width: auto;
+    height: auto;
+    min-width: 0;
+    max-width: 112px;
+    min-height: 50px;
+    flex-direction: column;
+    gap: 3px;
+    padding: 5px 2px;
+    border-radius: 10px;
+  }
+
+  .sidebar-btn svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* Desktop hover tooltips become always-visible tab labels. */
+  .sidebar-btn .tooltip {
+    position: static;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    background: none;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    color: inherit;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.15;
+    letter-spacing: 0.1px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
+    transition: none;
+  }
+
+  .sidebar-btn.active {
+    background: transparent;
+    box-shadow: none;
+    color: var(--red);
+  }
+
+  .sidebar-btn.active .tooltip {
+    color: var(--red);
+  }
+
+  /* Set by mobile-shim.js: desktop-only entries and the redundant back rail
+     button (the detail page and hardware back both go back already). */
+  .sidebar-btn.sb-nav-hide,
+  .sidebar-btn.sb-nav-back {
+    display: none !important;
+  }
+
+  /* ---- Main scroll area ---------------------------------------------- */
+  .main {
+    margin-left: 0 !important;
+    height: 100vh;
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ---- Home hero ------------------------------------------------------ */
+  .hero {
+    height: min(52vh, 430px);
+    min-height: 340px;
+  }
+
+  .hero-bg {
+    background-position: center 22%;
+  }
+
+  .hero-gradient {
+    background:
+      linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 82%, transparent) 38%, transparent 78%),
+      linear-gradient(to right, color-mix(in srgb, var(--bg) 55%, transparent) 0%, transparent 70%);
+  }
+
+  .hero-content {
+    padding: 18px 16px 22px;
+    max-width: none;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .hero-type {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    margin-bottom: 6px;
+  }
+
+  .hero-title {
+    font-size: 40px;
+    margin-bottom: 10px;
+  }
+
+  .hero-meta {
+    font-size: 12px;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .hero-overview {
+    font-size: 13px;
+    line-height: 1.5;
+    margin-bottom: 14px;
+    -webkit-line-clamp: 2;
+  }
+
+  .hero-actions {
+    gap: 8px;
+  }
+
+  .hero-actions .btn {
+    flex: 1 1 calc(50% - 4px);
+    justify-content: center;
+    padding: 11px 10px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  /* Surprise Me gets its own full-width row on a phone. */
+  .hero-actions .btn-surprise {
+    flex-basis: 100%;
+  }
+
+  /* ---- Content sections and cards ------------------------------------ */
+  .section {
+    padding: 14px 14px 4px;
+  }
+
+  .section-title {
+    font-size: 21px;
+    letter-spacing: 0.6px;
+    margin-bottom: 10px;
+    gap: 8px;
+  }
+
+  .cards-grid,
+  body.compact-mode .cards-grid {
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 10px;
+  }
+
+  .card,
+  body.compact-mode .scroll-row .card {
+    width: auto;
+  }
+
+  .card-info,
+  body.compact-mode .card-info {
+    padding: 7px 8px 8px;
+  }
+
+  .card-title,
+  body.compact-mode .card-title {
+    font-size: 12px;
+    margin-bottom: 2px;
+  }
+
+  .card-year,
+  body.compact-mode .card-year {
+    font-size: 10px;
+  }
+
+  .card-badge {
+    top: 6px;
+    right: 6px;
+    font-size: 9px;
+    padding: 2px 4px;
+  }
+
+  .scroll-row {
+    gap: 10px;
+  }
+
+  .scroll-row .card {
+    width: 116px;
+  }
+
+  /* Optional carousel home view: smaller than the desktop version. */
+  .carousel-section {
+    padding: 10px 14px 14px;
+  }
+
+  .carousel-wrapper {
+    height: 250px;
+  }
+
+  .carousel-poster,
+  .carousel-poster--placeholder {
+    width: 138px;
+    height: 207px;
+  }
+
+  /* ---- Genre browser -------------------------------------------------- */
+  .genre-groups {
+    gap: 16px;
+  }
+
+  .genre-group-label {
+    margin-bottom: 8px;
+  }
+
+  .genre-chips {
+    gap: 7px;
+  }
+
+  .genre-chip {
+    min-height: 38px;
+    padding: 7px 14px;
+    font-size: 13px;
+  }
+
+  .genre-page {
+    padding-top: 18px;
+  }
+
+  .genre-page-head {
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .genre-page-back {
+    margin-bottom: 12px;
+  }
+
+  .genre-page-title {
+    font-size: 30px;
+  }
+
+  .genre-page-count {
+    font-size: 12px;
+  }
+
+  .genre-page-toggle button {
+    min-height: 40px;
+  }
+
+  .genre-page-grid {
+    gap: 10px;
+  }
+
+  .genre-page-more {
+    margin: 18px 0 4px;
+  }
+
+  .genre-empty {
+    padding: 40px 18px;
+  }
+
+  /* ---- Detail page ---------------------------------------------------- */
+  .detail-hero {
+    min-height: 0;
+  }
+
+  .detail-bg {
+    background-position: center 25%;
+  }
+
+  .detail-gradient {
+    background: linear-gradient(
+      to top,
+      var(--bg) 0%,
+      var(--bg) 16%,
+      color-mix(in srgb, var(--bg) 82%, transparent) 34%,
+      color-mix(in srgb, var(--bg) 45%, transparent) 55%,
+      transparent 85%
+    );
+  }
+
+  .detail-content {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 118px 16px 28px;
+    text-align: center;
+  }
+
+  .detail-poster {
+    width: 132px;
+  }
+
+  .detail-info {
+    width: 100%;
+  }
+
+  .detail-type {
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    margin-bottom: 6px;
+  }
+
+  .detail-title {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .genres {
+    justify-content: center;
+    margin-bottom: 12px;
+  }
+
+  .detail-meta {
+    justify-content: center;
+    gap: 12px;
+    font-size: 12px;
+    margin-bottom: 14px;
+  }
+
+  .detail-overview {
+    text-align: left;
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+    max-width: none;
+  }
+
+  .detail-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+  }
+
+  .detail-actions .btn {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+
+  /* The detail page's own Back button spans the full row. */
+  .detail-actions .btn:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .player-wrap {
+    border-radius: 0;
+    margin: 0 -16px;
+  }
+
+  /* ---- Player controls ------------------------------------------------ */
+  /* Touch screens have no hover, so the source / sub-dub / ad-block controls
+     would never appear. Keep them visible and make them finger-sized. */
+  .player-wrap .player-overlay-btn,
+  .player-wrap .player-overlay-group {
+    opacity: 1;
+  }
+
+  .player-wrap .player-overlay-group {
+    top: 10px;
+    left: 10px;
+    /* Leave the top-right corner free for the download button. */
+    right: 60px;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .player-wrap .player-overlay-group .player-overlay-btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--bg) 80%, transparent);
+  }
+
+  .player-wrap .player-overlay-btn svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Bigger, round tap target for the download button. */
+  .player-wrap > .player-overlay-btn {
+    min-width: 42px;
+    min-height: 42px;
+    padding: 8px;
+    border-radius: 999px;
+    justify-content: center;
+  }
+
+  /* The source menu is position: fixed and opened from the chip, so it can
+     escape the player box and stay scrollable on a small screen. */
+  .source-dropdown,
+  .source-dropdown--fixed {
+    min-width: 210px;
+    max-height: 62vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    z-index: 10000;
+  }
+
+  .source-dropdown__item {
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+
+  .source-dropdown__note,
+  .source-dropdown__tag {
+    font-size: 10px;
+  }
+
+  /* ---- Search and modals --------------------------------------------- */
+  .modal-overlay {
+    padding: calc(env(safe-area-inset-top, 0px) + 10px) 10px 10px;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+
+  .search-box {
+    width: 100%;
+    max-width: none;
+    border-radius: 14px;
+  }
+
+  .search-input-wrap {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .search-input {
+    font-size: 16px;
+  }
+
+  .search-results {
+    max-height: calc(100vh - 150px);
+  }
+
+  /* Genre filter UI inside the search sheet. */
+  .search-genre-bar {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .search-genre-btn,
+  .search-genre-option {
+    min-height: 38px;
+  }
+
+  .search-genre-options {
+    gap: 6px;
+  }
+
+  .search-genre-panel {
+    max-height: 46vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .apikey-box {
+    width: calc(100vw - 24px) !important;
+    padding: 24px 18px !important;
+  }
+
+  .apikey-logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .apikey-title {
+    font-size: 34px !important;
+  }
+
+  /* ---- Library -------------------------------------------------------- */
+  .library-header {
+    padding: 20px 16px 0;
+  }
+
+  .library-title {
+    font-size: 34px;
+  }
+
+  .library-section {
+    padding: 24px 16px;
+  }
+
+  .empty-state {
+    padding: 56px 24px;
+  }
+
+  .history-row {
+    gap: 10px;
+    padding: 8px 10px;
+  }
+
+  /* ---- Downloads ------------------------------------------------------ */
+  .dl-page {
+    padding: 20px 16px 96px;
+  }
+
+  .dl-page__title {
+    font-size: 34px;
+  }
+
+  /* Keep metadata and the subtitle chip on one line each. */
+  .dl-card__meta > span {
+    white-space: nowrap;
+  }
+
+  .dl-toolbar {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  /* Untracked/search controls are desktop-only. */
+  .dl-toolbar > .dl-toolbar__group:nth-child(2) {
+    display: none;
+  }
+
+  .dl-page__local-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .dl-page__scan-controls {
+    width: 100%;
+  }
+
+  .dl-page__scan-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* Local-folder scanning is not available in the mobile build; completed
+     downloads share this list, so only the header is hidden. */
+  .sb-dl-local {
+    display: none !important;
+  }
+
+  /* Desktop-only download settings (folder + completion toast). */
+  .sb-hide-download-settings,
+  .sb-hide-download-setting-row {
+    display: none !important;
+  }
+
+  /* Fallback in case the legacy modal is opened from an old shortcut. */
+  .modal-backdrop:has(.download-modal) {
+    display: none !important;
+  }
+
+  /* ---- Settings ------------------------------------------------------- */
+  .sb-settings > .fade-in {
+    padding: 20px 16px 96px !important;
+  }
+
+  .sb-settings > .fade-in > div:first-child {
+    font-size: 34px !important;
+    letter-spacing: 0.5px;
+  }
+
+  .sb-settings > .fade-in > div:nth-child(2) {
+    margin-bottom: 28px !important;
+  }
+
+  .sb-settings > div[style*="position: sticky"] {
+    padding: 0 12px !important;
+  }
+
+  .sb-settings > div[style*="position: sticky"] > div {
+    padding: 8px 0 !important;
+  }
+
+  /* Hide the "jump to section" menu and keyboard shortcut chips. */
+  .sb-settings > div[style*="position: sticky"] > div > div:last-child,
+  .sb-settings > div[style*="position: sticky"] button span {
+    display: none !important;
+  }
+
+  .settings-section-title {
+    font-size: 12px;
+    letter-spacing: 1.5px;
+  }
+
+  /* ---- Native-feeling momentum scrolling ----------------------------- */
+  .main {
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Landscape phones are short: keep the hero from filling the whole screen. */
+@media (max-width: 900px) and (max-height: 500px) {
+  .hero {
+    height: 250px;
+    min-height: 0;
+  }
+
+  .hero-content {
+    padding: 12px 16px 16px;
+  }
+
+  .hero-title {
+    font-size: 32px;
+  }
+
+  .hero-overview {
+    display: none;
+  }
+
+  .detail-content {
+    padding-top: 70px;
+  }
+}
+
+/* Very narrow phones: keep three poster columns readable. */
+@media (max-width: 350px) {
+  .cards-grid,
+  body.compact-mode .cards-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-title {
+    font-size: 34px;
+  }
+}
+
+/* Android TV / large screens keep the desktop layout. */
+@media (min-width: 1200px) {
+  .main {
+    margin-left: var(--sidebar);
+  }
+}
