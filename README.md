@@ -1,4 +1,4 @@
-treambert Mobile (Android)
+Streambert Mobile (Android)
 Android port of the Streambert desktop app. Built as an installable APK (version 2.7.4-mobile, versionCode 12) that reuses the Streambert React renderer inside a native Android WebView, with a native full-screen player and a native HLS download service.
 
 The WebView loads https://streambert.local/index.html; Electron-only IPC is emulated by assets/www/mobile-shim.js, which routes calls to the window.Android JavaScript bridge exposed by MainActivity.
