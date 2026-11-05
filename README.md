@@ -90,7 +90,7 @@ Known limitations:
 
 ---
 
-## Build (no Gradle / Android Studio)
+## Build (Android Studio)
 
 Requirements:
 - Portable JDK 21
