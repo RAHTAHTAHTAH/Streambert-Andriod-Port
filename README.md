@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `2.7.5-mobile`, versionCode 13) that reuses the Streambert React
+(version `2.7.6-mobile`, versionCode 14) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -52,6 +52,10 @@ Downloads
 - **Download Season** — queues every episode of the selected season; the app
   resolves each stream in turn and the downloads run one at a time in the
   background, with per-episode progress in the notification
+- **Genre carousels on the home page** — instead of a block of genre chips that
+  opened a separate page, the home page now shows six poster carousels
+  (Action / Comedy / Sci-Fi for movies and series) using the same component as
+  Trending; a compact chip strip below still opens the full genre browser
 
 ---
 
@@ -128,6 +132,7 @@ The resulting APK is signed with the debug key and is ~0.45 MB.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.7.6-mobile` (14) — home page genre carousels; chip block moved to a compact strip
 - `2.7.5-mobile` (13) — "Download Season" button; queued, sequential downloads
 - `2.7.4-mobile` (12) — in-app player for downloads; prefer H.264 variants
 - `2.7.3-mobile` (11) — mobile Settings cleanup

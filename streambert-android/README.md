@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `2.7.5-mobile` (versionCode 13)
+- **Version:** `2.7.6-mobile` (versionCode 14)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -46,6 +46,12 @@ adapt it for phones:
   search sheet also keeps its multi-select genre filter.
 - **Surprise Me** in the hero picks a random unwatched movie or series, skipping
   age-restricted titles.
+- **Genre rows on the home page.** The old "Browse by Genre" chip block is
+  replaced by six poster carousels (Action, Comedy and Sci-Fi for movies;
+  Action & Adventure, Comedy and Sci-Fi & Fantasy for series) rendered with the
+  same carousel component as Trending Movies, including ratings and the age
+  limit. A compact, swipeable chip strip underneath still opens the full genre
+  page. Rows are fetched from TMDB and cached for ten minutes.
 - **Download Season** sits next to the season chips. It walks the selected
   season, reads the embed URL the app builds for each episode, then opens the
   native downloader: streams are resolved one episode at a time and handed to
