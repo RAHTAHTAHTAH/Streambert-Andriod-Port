@@ -31,6 +31,9 @@ Metadata & parental controls
 - Configurable TMDB read-access token and metadata language
 - Age rating & parental controls: hide/play-block titles above the configured limit
 - Rating country selection (maps certificates like PG/FSK/BBFC to a minimum age)
+- Optional 4-digit parental PIN: protects the age-rating Save button; change or
+  remove it with the PIN, and recover a forgotten PIN with a one-time recovery
+  code (view or replace it from the recovery screen)
 
 Subtitles
 - Subtitle language preference
@@ -132,6 +135,7 @@ The resulting APK is signed with the debug key and is ~0.45 MB.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.7.7-mobile` (15) — parental PIN for the age rating, with recovery code
 - `2.7.6-mobile` (14) — home page genre carousels; chip block moved to a compact strip
 - `2.7.5-mobile` (13) — "Download Season" button; queued, sequential downloads
 - `2.7.4-mobile` (12) — in-app player for downloads; prefer H.264 variants

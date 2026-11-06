@@ -846,3 +846,191 @@ a,
     padding-right: 48px;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Parental PIN - age rating protection in Settings
+   ------------------------------------------------------------------------- */
+.sb-parental {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+
+.sb-parental-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.sb-parental-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sb-parental-badge {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #48c774;
+  background: rgba(72, 199, 116, 0.12);
+  border: 1px solid rgba(72, 199, 116, 0.35);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.sb-parental-text {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text3);
+  margin-bottom: 12px;
+}
+
+.sb-parental-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sb-parental-actions .btn {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
+body.sb-pin-open {
+  overflow: hidden;
+}
+
+.sb-pin-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.72);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
+.sb-pin-card {
+  width: 100%;
+  max-width: 340px;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+}
+
+.sb-pin-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.sb-pin-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text3);
+  margin-bottom: 14px;
+}
+
+.sb-pin-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sb-pin-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 20px;
+  letter-spacing: 0.35em;
+  text-align: center;
+}
+
+.sb-pin-input::placeholder {
+  font-size: 14px;
+  letter-spacing: normal;
+  color: var(--text3);
+}
+
+.sb-pin-input:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(229, 9, 20, 0.18);
+}
+
+.sb-pin-code-input {
+  font-size: 18px;
+  letter-spacing: 0.18em;
+}
+
+.sb-pin-error {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: #ff6b6b;
+}
+
+.sb-pin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.sb-pin-actions .btn {
+  padding: 9px 18px;
+  font-size: 13px;
+}
+
+.sb-pin-link {
+  align-self: flex-start;
+  padding: 6px 0;
+  border: none;
+  background: none;
+  color: var(--text3);
+  font-family: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.sb-pin-link:active {
+  color: var(--text);
+}
+
+.sb-pin-code {
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: var(--surface2);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 24px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  -webkit-user-select: all;
+  user-select: all;
+}
+
+.sb-pin-note {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text3);
+}

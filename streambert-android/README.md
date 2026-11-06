@@ -64,6 +64,13 @@ adapt it for phones:
   Library/Watchlist/History, search results and genre pages. Titles without a
   certificate are treated as 18+: hidden whenever the limit is below 18, but
   they still never show a rating badge.
+- **Parental PIN.** Settings → Content has a *Parental PIN* card under the age
+  rating. Setting a 4-digit PIN locks the **Save** button of that section, so
+  the limit (and the rating country) cannot be changed without the PIN.
+  Removing or changing the PIN also asks for it first. A recovery code is
+  shown once when the PIN is created; entering it from *Forgot PIN?* lets you
+  view or replace a forgotten PIN. The PIN and code are kept in Android
+  `SharedPreferences`, and clearing the app's data removes them.
 - The hero is shorter, the detail page centres its poster and uses a
   two-column action grid, and search/settings/downloads get phone padding.
 - The player card shows the app's **source chip** (e.g. `Vidrift`) at the top
