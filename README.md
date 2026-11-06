@@ -15,6 +15,7 @@ emulated by `assets/www/mobile-shim.js`, which routes calls to the
 
 Core browsing & playback
 - Home page with hero banner, trending, top rated, recommended and continue-watching rows
+- Home tabs for Movies, TV Shows and Anime (TMDB lists, same age filtering)
 - Movie and TV detail pages (cast, score, runtime, overview)
 - Search across movies and series
 - Library: watchlist, history, continue watching
@@ -135,6 +136,7 @@ The resulting APK is signed with the debug key and is ~0.45 MB.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.7.8-mobile` (16) — Home / Movies / TV Shows / Anime tabs on the home page
 - `2.7.7-mobile` (15) — parental PIN for the age rating, with recovery code
 - `2.7.6-mobile` (14) — home page genre carousels; chip block moved to a compact strip
 - `2.7.5-mobile` (13) — "Download Season" button; queued, sequential downloads

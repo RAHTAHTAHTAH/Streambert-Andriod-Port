@@ -71,6 +71,15 @@ adapt it for phones:
   shown once when the PIN is created; entering it from *Forgot PIN?* lets you
   view or replace a forgotten PIN. The PIN and code are kept in Android
   `SharedPreferences`, and clearing the app's data removes them.
+- **Home tabs.** A sticky tab strip at the top of Home switches between the
+  mixed **Home** feed and dedicated **Movies**, **TV Shows** and **Anime**
+  catalogues. Each catalogue is built from TMDB lists (trending, popular, top
+  rated, new/airing, plus genre rows) and uses the same carousel component as
+  the rest of the app, so age ratings and the age limit still apply. The Anime
+  tab is TMDB Japanese animation (genre 16 + original language `ja`), with the
+  app's ANIME badge; the HiAnime source is not available in this build. Rows
+  are cached for ten minutes, and the last tab is restored after visiting a
+  detail page.
 - The hero is shorter, the detail page centres its poster and uses a
   two-column action grid, and search/settings/downloads get phone padding.
 - The player card shows the app's **source chip** (e.g. `Vidrift`) at the top
