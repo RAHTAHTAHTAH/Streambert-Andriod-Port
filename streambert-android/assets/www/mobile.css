@@ -745,3 +745,41 @@ a,
     margin-left: var(--sidebar);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Download season
+   Button is injected next to the season chips by mobile-shim.js.
+   -------------------------------------------------------------------------- */
+.season-btn.sb-season-dl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  border-color: var(--red);
+  background: rgba(229, 9, 20, 0.16);
+  color: #fff;
+  font-weight: 600;
+}
+
+.season-btn.sb-season-dl:hover,
+.season-btn.sb-season-dl:active {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+
+.sb-season-dl-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.season-btn.sb-season-dl-busy {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+@media (max-width: 520px) {
+  .season-selector .sb-season-dl {
+    margin-left: 0;
+  }
+}

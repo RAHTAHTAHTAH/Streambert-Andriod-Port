@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `2.7.4-mobile`, versionCode 12) that reuses the Streambert React
+(version `2.7.5-mobile`, versionCode 13) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -49,6 +49,9 @@ Downloads
 - Downloaded files appear in the in-app Downloads page
 - Open, delete and "delete all" downloads
 - Download size accounting
+- **Download Season** — queues every episode of the selected season; the app
+  resolves each stream in turn and the downloads run one at a time in the
+  background, with per-episode progress in the notification
 
 ---
 
@@ -125,6 +128,7 @@ The resulting APK is signed with the debug key and is ~0.45 MB.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.7.5-mobile` (13) — "Download Season" button; queued, sequential downloads
 - `2.7.4-mobile` (12) — in-app player for downloads; prefer H.264 variants
 - `2.7.3-mobile` (11) — mobile Settings cleanup
 - `2.7.2-mobile` (10) — unrated titles treated as 18

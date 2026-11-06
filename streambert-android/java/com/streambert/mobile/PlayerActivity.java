@@ -35,8 +35,13 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 import java.io.ByteArrayInputStream;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -50,6 +55,14 @@ public class PlayerActivity extends Activity {
     static final String EXTRA_URL = "url";
     static final String EXTRA_UA = "ua";
     static final String EXTRA_TITLE = "title";
+
+    /**
+     * Season download mode. The payload is a JSON object:
+     * {"show":"...","season":2,"episodes":[{"n":1,"title":"...","url":"..."}]}
+     */
+    static final String EXTRA_SEASON_QUEUE = "season_queue";
+
+    private static final long QUEUE_CAPTURE_TIMEOUT_MS = 25_000L;
 
     // Shared with MainActivity.Bridge so the renderer's download button can
     // start a download of the stream the player last captured.
@@ -84,6 +97,45 @@ public class PlayerActivity extends Activity {
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chrome;
 
+    // ---- "Download season" queue -------------------------------------
+    private static final class Episode {
+        final int number;
+        final String name;
+        final String url;
+
+        Episode(int number, String name, String url) {
+            this.number = number;
+            this.name = name;
+            this.url = url;
+        }
+    }
+
+    private final List<Episode> seasonQueue = new ArrayList<>();
+    private boolean queueMode = false;
+    private int queueIndex = 0;
+    private boolean queueItemCaptured = false;
+    private int queuedCount = 0;
+    private int skippedCount = 0;
+    private String seasonShow = "";
+    private int seasonNumber = 1;
+    private FrameLayout queueCover;
+    private TextView queueCoverTitle;
+    private TextView queueCoverHint;
+    private LinearLayout queueBar;
+    private TextView queueBarLabel;
+
+    private final Runnable queueTimeout = new Runnable() {
+        @Override
+        public void run() {
+            if (!queueMode || queueItemCaptured) return;
+            hideQueueCover();
+            if (queueBarLabel != null) {
+                queueBarLabel.setText("Tap play to start this episode");
+            }
+            toast("Tap play in the video to start this episode");
+        }
+    };
+
     /** The thin app bar is hidden by default so the hoster's page owns the screen. */
     private boolean topBarVisible = false;
     private final Runnable hideBarRunnable = new Runnable() {
@@ -107,6 +159,13 @@ public class PlayerActivity extends Activity {
         String titleExtra = intent.getStringExtra(EXTRA_TITLE);
         if (titleExtra != null && !titleExtra.trim().isEmpty()) title = titleExtra.trim();
 
+        parseSeasonQueue(intent);
+        if (queueMode) {
+            Episode first = seasonQueue.get(0);
+            pageUrl = first.url;
+            title = episodeTitle(first);
+        }
+
         if (pageUrl == null) {
             finish();
             return;
@@ -126,6 +185,12 @@ public class PlayerActivity extends Activity {
         }
 
         buildUi();
+
+        if (queueMode) {
+            buildQueueUi();
+            if (downloadBtn != null) downloadBtn.setVisibility(View.GONE);
+            if (topBar != null) topBar.setVisibility(View.GONE);
+        }
 
         WebSettings s = web.getSettings();
         s.setJavaScriptEnabled(true);
@@ -182,6 +247,7 @@ public class PlayerActivity extends Activity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 injectPopupBlocker();
+                if (queueMode) mutePage();
             }
 
             @Override
@@ -248,11 +314,18 @@ public class PlayerActivity extends Activity {
             WebView.setWebContentsDebuggingEnabled(true);
         }
 
+        hideSystemUi();
+
+        if (queueMode) {
+            // The queue drives the WebView itself; the thin player bar would
+            // only get in the way.
+            startQueueItem(0);
+            return;
+        }
+
         Map<String, String> headers = new HashMap<>();
         headers.put("Referer", referer);
         web.loadUrl(pageUrl, headers);
-
-        hideSystemUi();
 
         // Flash the bar once so the tap-to-show interaction is discoverable,
         // then let the hoster's page own the screen.
@@ -410,6 +483,16 @@ public class PlayerActivity extends Activity {
         boolean isVideo = lower.matches(".*\\.(mp4|m4v|webm|mkv)(\\?.*)?$");
         if (!isHls && !isVideo) return;
 
+        if (queueMode) {
+            synchronized (this) {
+                if (url.equals(lastMediaUrl)) return;
+                lastMediaUrl = url;
+                lastIsHls = isHls;
+            }
+            onQueueMedia(url, isHls);
+            return;
+        }
+
         synchronized (this) {
             if (url.equals(lastMediaUrl)) return;
             lastMediaUrl = url;
@@ -432,7 +515,309 @@ public class PlayerActivity extends Activity {
         });
     }
 
+    // ------------------------------------------------------------------
+    // Download season
+    // ------------------------------------------------------------------
+
+    private void parseSeasonQueue(Intent intent) {
+        String json = intent == null ? null : intent.getStringExtra(EXTRA_SEASON_QUEUE);
+        if (json == null || json.trim().isEmpty()) return;
+        try {
+            JSONObject root = new JSONObject(json);
+            seasonShow = root.optString("show", "");
+            seasonNumber = root.optInt("season", 1);
+            JSONArray episodes = root.optJSONArray("episodes");
+            if (episodes != null) {
+                for (int i = 0; i < episodes.length() && seasonQueue.size() < 100; i++) {
+                    JSONObject item = episodes.optJSONObject(i);
+                    if (item == null) continue;
+                    String url = item.optString("url", "");
+                    if (!isHttp(url)) continue;
+                    seasonQueue.add(new Episode(
+                            item.optInt("n", i + 1),
+                            item.optString("title", ""),
+                            url));
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not parse season queue", e);
+        }
+        queueMode = !seasonQueue.isEmpty();
+    }
+
+    private void buildQueueUi() {
+        queueBar = new LinearLayout(this);
+        queueBar.setOrientation(LinearLayout.HORIZONTAL);
+        queueBar.setGravity(Gravity.CENTER_VERTICAL);
+        queueBar.setBackgroundColor(0xE6000000);
+        queueBar.setPadding(dp(14), dp(10), dp(14), dp(10));
+
+        queueBarLabel = new TextView(this);
+        queueBarLabel.setTextColor(0xFFF0F0F0);
+        queueBarLabel.setTextSize(14);
+        queueBarLabel.setSingleLine(true);
+        queueBarLabel.setEllipsize(android.text.TextUtils.TruncateAt.END);
+        queueBarLabel.setLayoutParams(new LinearLayout.LayoutParams(
+                0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView skip = makeButton("Skip");
+        skip.setTextSize(13);
+        skip.setPadding(dp(12), dp(6), dp(12), dp(6));
+        skip.setOnClickListener(v -> skipQueueItem());
+
+        TextView cancel = makeButton("Cancel");
+        cancel.setTextSize(13);
+        cancel.setPadding(dp(12), dp(6), dp(12), dp(6));
+        cancel.setOnClickListener(v -> finishQueue(false));
+
+        LinearLayout.LayoutParams actionParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        actionParams.setMargins(dp(8), 0, 0, 0);
+        queueBar.addView(queueBarLabel);
+        queueBar.addView(skip, actionParams);
+        queueBar.addView(cancel, actionParams);
+
+        queueCover = new FrameLayout(this);
+        queueCover.setBackgroundColor(0xF2000000);
+        queueCover.setClickable(true);
+        queueCover.setFocusable(true);
+
+        LinearLayout panel = new LinearLayout(this);
+        panel.setOrientation(LinearLayout.VERTICAL);
+        panel.setGravity(Gravity.CENTER);
+        panel.setPadding(dp(32), dp(32), dp(32), dp(32));
+
+        queueCoverTitle = new TextView(this);
+        queueCoverTitle.setTextColor(0xFFFFFFFF);
+        queueCoverTitle.setTextSize(22);
+        queueCoverTitle.setGravity(Gravity.CENTER);
+
+        queueCoverHint = new TextView(this);
+        queueCoverHint.setTextColor(0xFFB8B8B8);
+        queueCoverHint.setTextSize(14);
+        queueCoverHint.setGravity(Gravity.CENTER);
+        queueCoverHint.setPadding(0, dp(12), 0, 0);
+
+        panel.addView(queueCoverTitle);
+        panel.addView(queueCoverHint);
+        queueCover.addView(panel, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+
+        root.addView(queueCover, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // Added last so it stays on top of the cover: Skip and Cancel must be
+        // reachable while a stream is being resolved.
+        root.addView(queueBar, new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                Gravity.TOP));
+    }
+
+    private void startQueueItem(int index) {
+        if (!queueMode) return;
+        if (index >= seasonQueue.size()) {
+            finishQueue(true);
+            return;
+        }
+
+        queueIndex = index;
+        synchronized (this) {
+            queueItemCaptured = false;
+            lastMediaUrl = null;
+            lastIsHls = false;
+        }
+
+        Episode episode = seasonQueue.get(index);
+        title = episodeTitle(episode);
+        pageUrl = episode.url;
+        Uri uri = Uri.parse(pageUrl);
+        if (uri.getHost() != null) {
+            referer = uri.getScheme() + "://" + uri.getHost() + "/";
+        }
+
+        String position = "Episode " + (index + 1) + " of " + seasonQueue.size();
+        showQueueCover(position, "Finding the stream\u2026");
+        if (queueBarLabel != null) {
+            queueBarLabel.setText("Season " + seasonNumber + "  \u2022  " + position);
+        }
+
+        Map<String, String> headers = new HashMap<>();
+        headers.put("Referer", referer);
+        web.loadUrl(pageUrl, headers);
+
+        web.removeCallbacks(queueTimeout);
+        web.postDelayed(queueTimeout, QUEUE_CAPTURE_TIMEOUT_MS);
+        web.postDelayed(this::mutePage, 1500);
+        web.postDelayed(this::mutePage, 4000);
+    }
+
+    /** Called from the WebView's request interceptor (background thread). */
+    private void onQueueMedia(String url, boolean isHls) {
+        synchronized (this) {
+            if (queueItemCaptured) return;
+            queueItemCaptured = true;
+        }
+        web.removeCallbacks(queueTimeout);
+
+        final Episode episode = seasonQueue.get(queueIndex);
+        enqueueEpisode(episode, url, isHls);
+
+        runOnUiThread(() -> {
+            if (queueCoverTitle != null) queueCoverTitle.setText("Queued");
+            if (queueCoverHint != null) queueCoverHint.setText(episodeTitle(episode));
+            if (queueBarLabel != null) {
+                queueBarLabel.setText("Season " + seasonNumber + "  \u2022  E"
+                        + episode.number + " queued");
+            }
+        });
+
+        web.postDelayed(() -> {
+            if (!isFinishing()) startQueueItem(queueIndex + 1);
+        }, 900);
+    }
+
+    private void enqueueEpisode(Episode episode, String url, boolean hls) {
+        String name = episodeTitle(episode);
+        if (alreadyDownloaded(name)) {
+            skippedCount++;
+            return;
+        }
+
+        if (hls) {
+            Intent service = new Intent(this, DownloadService.class);
+            service.putExtra(DownloadService.EXTRA_URL, url);
+            service.putExtra(DownloadService.EXTRA_UA, userAgent);
+            service.putExtra(DownloadService.EXTRA_TITLE, name);
+            service.putExtra(DownloadService.EXTRA_NAME, name);
+            service.putExtra(DownloadService.EXTRA_REFERER, referer);
+            service.putExtra(DownloadService.EXTRA_INDEX, episode.number);
+            service.putExtra(DownloadService.EXTRA_TOTAL, seasonQueue.size());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(service);
+            } else {
+                startService(service);
+            }
+            queuedCount++;
+            return;
+        }
+
+        try {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
+            request.setTitle(name);
+            request.setDescription("Downloading with Streambert");
+            request.setNotificationVisibility(
+                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS,
+                    "Streambert/" + name + ".mp4");
+            request.addRequestHeader("User-Agent", userAgent);
+            if (referer != null && !referer.isEmpty()) {
+                request.addRequestHeader("Referer", referer);
+            }
+            DownloadManager manager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            if (manager != null) {
+                manager.enqueue(request);
+                queuedCount++;
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not queue direct video download", e);
+        }
+    }
+
+    private void skipQueueItem() {
+        if (!queueMode) return;
+        synchronized (this) {
+            if (queueItemCaptured) return;
+        }
+        web.removeCallbacks(queueTimeout);
+        startQueueItem(queueIndex + 1);
+    }
+
+    private void finishQueue(boolean completed) {
+        queueMode = false;
+        if (web != null) web.removeCallbacks(queueTimeout);
+        if (completed) {
+            if (queuedCount == 0) {
+                toast(skippedCount > 0
+                        ? "All episodes in this season are already downloaded."
+                        : "No streams found for this season.");
+            } else {
+                String message = "Queued " + queuedCount
+                        + (queuedCount == 1 ? " episode" : " episodes");
+                if (skippedCount > 0) {
+                    message += " (" + skippedCount + " already downloaded)";
+                }
+                toast(message + " \u2014 downloads continue in the background.");
+            }
+        }
+        finish();
+    }
+
+    private void showQueueCover(String titleText, String hintText) {
+        if (queueCover == null) return;
+        queueCover.setVisibility(View.VISIBLE);
+        if (queueCoverTitle != null) queueCoverTitle.setText(titleText);
+        if (queueCoverHint != null) queueCoverHint.setText(hintText);
+    }
+
+    private void hideQueueCover() {
+        if (queueCover != null) queueCover.setVisibility(View.GONE);
+    }
+
+    private void mutePage() {
+        if (web == null) return;
+        web.evaluateJavascript(
+                "(function(){try{var m=document.querySelectorAll('video,audio');" +
+                "for(var i=0;i<m.length;i++){m[i].muted=true;m[i].volume=0;" +
+                "m[i].removeAttribute('autoplay');}}catch(e){}})();", null);
+    }
+
+    private String episodeTitle(Episode episode) {
+        String show = seasonShow == null ? "" : seasonShow.trim();
+        String code = "S" + pad2(seasonNumber) + "E" + pad2(episode.number);
+        String name = episode.name == null ? "" : episode.name.trim();
+        if (name.isEmpty()) name = "Episode " + episode.number;
+        return show.isEmpty() ? code + " - " + name : show + " - " + code + " - " + name;
+    }
+
+    private static String pad2(int value) {
+        return value < 10 ? "0" + value : String.valueOf(value);
+    }
+
+    private boolean alreadyDownloaded(String baseName) {
+        try {
+            String wanted = normalizeName(baseName);
+            for (DownloadIndex.Entry entry : DownloadIndex.list(this)) {
+                if (entry.name != null
+                        && normalizeName(stripExtension(entry.name)).equals(wanted)) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return false;
+    }
+
+    private static String normalizeName(String value) {
+        if (value == null) return "";
+        return value.toLowerCase(Locale.US).replaceAll("[^a-z0-9]+", " ").trim();
+    }
+
+    private static String stripExtension(String name) {
+        int dot = name.lastIndexOf('.');
+        return dot > 0 ? name.substring(0, dot) : name;
+    }
+
+    private static boolean isHttp(String url) {
+        return url != null && url.length() > 4
+                && (url.regionMatches(true, 0, "http://", 0, 7)
+                || url.regionMatches(true, 0, "https://", 0, 8));
+    }
+
     private void handleDownload() {
+        if (queueMode) return;
         String url = lastMediaUrl;
         if (url == null) {
             toast("No stream detected yet - start playback first.");

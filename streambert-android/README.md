@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `2.7.4-mobile` (versionCode 12)
+- **Version:** `2.7.5-mobile` (versionCode 13)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -46,6 +46,13 @@ adapt it for phones:
   search sheet also keeps its multi-select genre filter.
 - **Surprise Me** in the hero picks a random unwatched movie or series, skipping
   age-restricted titles.
+- **Download Season** sits next to the season chips. It walks the selected
+  season, reads the embed URL the app builds for each episode, then opens the
+  native downloader: streams are resolved one episode at a time and handed to
+  the download queue. Restricted and unreleased episodes are skipped, and
+  episodes whose file is already in `Download/Streambert` are not fetched
+  twice. If a hoster will not autoplay, the downloader shows the player page
+  and waits for you to tap play before moving on.
 - **Age limit.** When a limit is set in Settings → Content, titles above it are
   hidden from Home, Trending, Top Rated, Recommended, Continue Watching, the
   Library/Watchlist/History, search results and genre pages. Titles without a
@@ -97,6 +104,11 @@ adapt it for phones:
   - Not supported yet: pause/resume across app restarts, and separate audio
     for non-fMP4 (MPEG-TS) streams — those still download video only, and
     DRM-protected streams are refused.
+- **Season downloads.** "Download Season" queues every episode of the current
+  season. Downloads run sequentially (one worker thread, one notification that
+  names the episode and its position), so a season does not hammer the hoster
+  with parallel requests. Files are named
+  `Show - S02E03 - Episode name.mp4` / `.m2ts`.
 - **Downloads tab.** The app's own Downloads page lists everything in
   `Download/Streambert/` (`DownloadIndex`). Finished files are merged into the
   page automatically, with Watch (opens your video player), Show in folder,
@@ -141,9 +153,19 @@ The script looks for the SDK in `ANDROID_HOME`, `ANDROID_SDK_ROOT`,
 
 ### Build
 
+Windows:
+
 ```powershell
 cd streambert-android
 powershell -ExecutionPolicy Bypass -File .\build.ps1
+```
+
+Linux / macOS (aarch64 works too: the x86-64 build-tools are run through
+`qemu-user-static` when present):
+
+```bash
+cd streambert-android
+ANDROID_HOME=~/Android/Sdk JAVA_HOME=/path/to/jdk-21 ./build.sh
 ```
 
 Output: `Streambert-Mobile.apk`, signed with the debug keystore
@@ -155,7 +177,8 @@ release key before distributing.
 ```
 streambert-android/
 ├── AndroidManifest.xml
-├── build.ps1                     # manual build + sign pipeline
+├── build.ps1                     # manual build + sign pipeline (Windows)
+├── build.sh                      # same pipeline for Linux/macOS
 ├── java/com/streambert/mobile/
 │   ├── MainActivity.java         # WebView + https://streambert.local asset server
 │   ├── PlayerActivity.java       # full-screen player, media capture, download

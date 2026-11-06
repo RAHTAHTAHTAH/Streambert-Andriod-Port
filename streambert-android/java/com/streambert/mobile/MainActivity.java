@@ -42,6 +42,9 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
 public class MainActivity extends Activity {
 
     static final String APP_HOST = "streambert.local";
@@ -445,6 +448,78 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 return "2.7.3-mobile";
             }
+        }
+
+        @JavascriptInterface
+        public String startSeasonDownload(final String json) {
+            if (json == null || json.trim().isEmpty()) {
+                return "{\"ok\":false,\"reason\":\"empty\"}";
+            }
+
+            String show = "";
+            int season = 1;
+            int count = 0;
+            try {
+                JSONObject root = new JSONObject(json);
+                show = root.optString("show", "");
+                season = root.optInt("season", 1);
+                JSONArray episodes = root.optJSONArray("episodes");
+                count = episodes == null ? 0 : episodes.length();
+            } catch (Exception e) {
+                return "{\"ok\":false,\"reason\":\"bad_args\"}";
+            }
+            if (count == 0) return "{\"ok\":false,\"reason\":\"empty\"}";
+
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
+                    && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                runOnUiThread(() -> requestPermissions(
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 46));
+                return "{\"ok\":false,\"reason\":\"permission\"}";
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                    && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                runOnUiThread(() -> requestPermissions(
+                        new String[]{Manifest.permission.POST_NOTIFICATIONS}, 47));
+            }
+
+            final String payload = json;
+            final int episodeCount = count;
+            String label = show.trim().isEmpty()
+                    ? "Season " + season
+                    : show.trim() + " \u2013 Season " + season;
+            final String message = "Queue " + episodeCount
+                    + (episodeCount == 1 ? " episode" : " episodes")
+                    + " of " + label + "?\n\n"
+                    + "Episodes download one at a time in the background. "
+                    + "This can use a lot of mobile data.";
+
+            runOnUiThread(() -> {
+                try {
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Download season")
+                            .setMessage(message)
+                            .setPositiveButton("Download", (dialog, which) -> {
+                                Intent intent = new Intent(MainActivity.this, PlayerActivity.class);
+                                intent.putExtra(PlayerActivity.EXTRA_SEASON_QUEUE, payload);
+                                try {
+                                    startActivity(intent);
+                                } catch (Exception e) {
+                                    Toast.makeText(MainActivity.this,
+                                            "Could not open the season downloader",
+                                            Toast.LENGTH_SHORT).show();
+                                }
+                            })
+                            .setNegativeButton("Cancel", null)
+                            .show();
+                } catch (Exception e) {
+                    Toast.makeText(MainActivity.this,
+                            "Could not start the season download", Toast.LENGTH_SHORT).show();
+                }
+            });
+
+            return "{\"ok\":true,\"count\":" + count + "}";
         }
 
         @JavascriptInterface

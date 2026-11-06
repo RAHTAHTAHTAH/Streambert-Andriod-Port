@@ -20,13 +20,19 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayDeque;
 
 /**
- * Foreground service that saves an HLS stream to Download/Streambert.
+ * Foreground service that saves HLS streams to Download/Streambert.
  *
  * <p>Downloads continue while the player is closed, with progress shown in a
  * notification. Files land in the public Downloads collection via MediaStore
  * on Android 10+, and directly in the Downloads folder on older versions.</p>
+ *
+ * <p>More than one stream can be queued (used by "Download season"): jobs run
+ * one after another on a single worker thread, so a season does not hammer the
+ * hoster with concurrent requests and the notification always describes the
+ * episode that is actually downloading.</p>
  */
 public class DownloadService extends Service {
 
@@ -34,6 +40,11 @@ public class DownloadService extends Service {
     static final String EXTRA_UA = "ua";
     static final String EXTRA_TITLE = "title";
     static final String EXTRA_REFERER = "referer";
+    /** Optional final base name (no timestamp, no extension). */
+    static final String EXTRA_NAME = "name";
+    /** Episode number and season size, only used for the notification label. */
+    static final String EXTRA_INDEX = "index";
+    static final String EXTRA_TOTAL = "total";
 
     /** Broadcast to the running UI so the Downloads page can refresh. */
     static final String ACTION_DOWNLOAD_FINISHED = "com.streambert.mobile.DOWNLOAD_FINISHED";
@@ -43,8 +54,37 @@ public class DownloadService extends Service {
     private static final int PROGRESS_ID = 4101;
     private static final int DONE_ID = 4102;
 
+    /** A single queued download. */
+    private static final class Job {
+        final String url;
+        final String userAgent;
+        final String title;
+        final String referer;
+        final String name;
+        final int index;
+        final int total;
+
+        Job(String url, String userAgent, String title, String referer,
+            String name, int index, int total) {
+            this.url = url;
+            this.userAgent = userAgent;
+            this.title = title;
+            this.referer = referer;
+            this.name = name;
+            this.index = index;
+            this.total = total;
+        }
+
+        String position() {
+            if (total <= 1 || index <= 0) return "";
+            return "E" + index + " of " + total + "  •  ";
+        }
+    }
+
+    private final ArrayDeque<Job> queue = new ArrayDeque<>();
     private volatile boolean cancelled = false;
     private Thread worker;
+    private Job current;
     private long lastNotifyAt = 0L;
     private int lastPercent = -1;
 
@@ -57,36 +97,39 @@ public class DownloadService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent == null) {
-            stopSelf();
+            stopIfIdle();
             return START_NOT_STICKY;
         }
         if (ACTION_CANCEL.equals(intent.getAction())) {
-            cancelled = true;
-            stopForeground(true);
-            stopSelf();
+            cancelAll();
             return START_NOT_STICKY;
         }
 
         final String url = intent.getStringExtra(EXTRA_URL);
-        final String userAgent = intent.getStringExtra(EXTRA_UA);
-        final String title = intent.getStringExtra(EXTRA_TITLE);
-        final String referer = intent.getStringExtra(EXTRA_REFERER);
-
         if (url == null) {
-            stopSelf();
+            stopIfIdle();
             return START_NOT_STICKY;
         }
 
-        Notification notification = buildNotification("Starting download…", 0, true);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            startForeground(PROGRESS_ID, notification,
-                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
-        } else {
-            startForeground(PROGRESS_ID, notification);
+        Job job = new Job(
+                url,
+                intent.getStringExtra(EXTRA_UA),
+                intent.getStringExtra(EXTRA_TITLE),
+                intent.getStringExtra(EXTRA_REFERER),
+                intent.getStringExtra(EXTRA_NAME),
+                intent.getIntExtra(EXTRA_INDEX, 0),
+                intent.getIntExtra(EXTRA_TOTAL, 0));
+
+        synchronized (queue) {
+            queue.add(job);
+        }
+        synchronized (this) {
+            if (worker == null) cancelled = false;
         }
 
-        worker = new Thread(() -> runDownload(url, userAgent, title, referer), "hls-download");
-        worker.start();
+        String label = job.position() + (job.name != null ? job.name : job.title);
+        startForegroundCompat("Queued  •  " + label);
+        ensureWorker();
         return START_NOT_STICKY;
     }
 
@@ -102,11 +145,91 @@ public class DownloadService extends Service {
     }
 
     // ------------------------------------------------------------------
+    // Queue
+    // ------------------------------------------------------------------
+
+    private void ensureWorker() {
+        synchronized (this) {
+            if (worker != null) return;
+            worker = new Thread(this::drainQueue, "hls-download");
+            worker.start();
+        }
+    }
+
+    private void drainQueue() {
+        try {
+            while (!cancelled) {
+                Job job;
+                synchronized (queue) {
+                    job = queue.poll();
+                }
+                if (job == null) break;
+
+                current = job;
+                resetProgress();
+                runDownload(job);
+                current = null;
+                broadcastFinished();
+            }
+        } finally {
+            synchronized (this) {
+                worker = null;
+            }
+        }
+
+        boolean pending;
+        synchronized (queue) {
+            pending = !queue.isEmpty();
+        }
+        if (pending) {
+            // A job arrived while the worker was finishing the previous one
+            // (or the user cancelled an earlier one and then queued again).
+            cancelled = false;
+            ensureWorker();
+            return;
+        }
+
+        stopForeground(true);
+        stopSelf();
+    }
+
+    private void cancelAll() {
+        cancelled = true;
+        synchronized (queue) {
+            queue.clear();
+        }
+        Thread running;
+        synchronized (this) {
+            running = worker;
+        }
+        if (running != null) running.interrupt();
+        stopForeground(true);
+        stopSelf();
+    }
+
+    private void stopIfIdle() {
+        synchronized (this) {
+            if (worker != null) return;
+        }
+        boolean pending;
+        synchronized (queue) {
+            pending = !queue.isEmpty();
+        }
+        if (!pending) {
+            stopForeground(true);
+            stopSelf();
+        }
+    }
+
+    // ------------------------------------------------------------------
     // Download
     // ------------------------------------------------------------------
 
-    private void runDownload(String url, String userAgent, String title, String referer) {
-        String baseName = HlsDownloader.safeName(title) + "-" + System.currentTimeMillis();
+    private void runDownload(Job job) {
+        String baseName = job.name != null && !job.name.trim().isEmpty()
+                ? HlsDownloader.safeName(job.name)
+                : HlsDownloader.safeName(job.title) + "-" + System.currentTimeMillis();
+        String position = job.position();
         OutputStream out = null;
         Uri mediaUri = null;
         File tempFile = null;
@@ -135,12 +258,12 @@ public class DownloadService extends Service {
             }
             if (out == null) throw new IOException("Could not open output file");
 
-            HlsDownloader downloader = new HlsDownloader(this, referer, userAgent,
+            HlsDownloader downloader = new HlsDownloader(this, job.referer, job.userAgent,
                     new HlsDownloader.Listener() {
                         @Override
                         public void onProgress(long bytes, int done, int total, String label) {
                             int percent = total <= 0 ? 0 : (int) ((done * 100L) / total);
-                            notifyProgress(label + "  •  " + formatBytes(bytes), percent);
+                            notifyProgress(position + label + "  •  " + formatBytes(bytes), percent);
                         }
 
                         @Override
@@ -149,7 +272,7 @@ public class DownloadService extends Service {
                         }
                     });
 
-            HlsDownloader.Result result = downloader.download(url, out);
+            HlsDownloader.Result result = downloader.download(job.url, out);
             out.close();
             out = null;
 
@@ -175,7 +298,7 @@ public class DownloadService extends Service {
                         new String[]{mime}, null);
             }
 
-            notifyDone(finalName, result.bytes);
+            notifyDone(position + finalName, result.bytes);
         } catch (Exception e) {
             android.util.Log.e("StreambertDownload", "Download failed", e);
             closeQuietly(out);
@@ -190,12 +313,9 @@ public class DownloadService extends Service {
                 tempFile.delete();
             }
             if (!cancelled) {
-                notifyFailed(e.getMessage() == null ? "Download failed" : e.getMessage());
+                notifyFailed(position + (e.getMessage() == null
+                        ? "Download failed" : e.getMessage()));
             }
-        } finally {
-            broadcastFinished();
-            stopForeground(true);
-            stopSelf();
         }
     }
 
@@ -220,6 +340,21 @@ public class DownloadService extends Service {
                 "Downloads", NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("Streambert video downloads");
         manager.createNotificationChannel(channel);
+    }
+
+    private void startForegroundCompat(String text) {
+        Notification notification = buildNotification(text, 0, true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(PROGRESS_ID, notification,
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC);
+        } else {
+            startForeground(PROGRESS_ID, notification);
+        }
+    }
+
+    private void resetProgress() {
+        lastNotifyAt = 0L;
+        lastPercent = -1;
     }
 
     private void notifyProgress(String text, int percent) {
@@ -259,8 +394,12 @@ public class DownloadService extends Service {
     }
 
     private Notification buildNotification(String text, int percent, boolean indeterminate) {
+        Job job = current;
+        String titleText = (job != null && job.total > 1)
+                ? "Downloading season" : "Downloading video";
+
         Notification.Builder builder = baseBuilder()
-                .setContentTitle("Downloading video")
+                .setContentTitle(titleText)
                 .setContentText(text)
                 .setSmallIcon(android.R.drawable.stat_sys_download)
                 .setOngoing(true)

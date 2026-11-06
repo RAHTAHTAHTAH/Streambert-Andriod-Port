@@ -564,10 +564,189 @@
       chromePending = false;
       try { normalizeNav(); } catch (e) {}
       try { classifyPage(); } catch (e) {}
+      try { ensureSeasonButton(); } catch (e) {}
     };
     if (window.requestAnimationFrame) window.requestAnimationFrame(run);
     else setTimeout(run, 50);
   }
+
+  // ---------------------------------------------------------------------
+  // "Download season"
+  // ---------------------------------------------------------------------
+  // The renderer keeps the embed URL for the selected episode in the src of
+  // its <webview> element. There is no public API to ask for the URL of an
+  // episode that is not selected, so this walks the season: select an
+  // episode, read the URL the app just built, repeat. Nothing is loaded or
+  // played during the walk; the native side resolves the streams afterwards.
+  var seasonBusy = false;
+
+  function seasonNumber() {
+    var buttons = document.querySelectorAll(".season-selector .season-btn");
+    for (var i = 0; i < buttons.length; i++) {
+      if (buttons[i].classList.contains("active")) {
+        var match = (buttons[i].textContent || "").match(/(\d+)/);
+        return match ? parseInt(match[1], 10) : i + 1;
+      }
+    }
+    return 1;
+  }
+
+  function showTitle() {
+    var el = document.querySelector(".detail-title");
+    var name = el && el.textContent ? el.textContent.trim() : "";
+    if (!name) name = (document.title || "").trim();
+    return name;
+  }
+
+  function usableEpisodeCards() {
+    var grid = document.querySelector(".episodes-grid");
+    if (!grid) return [];
+    var cards = grid.querySelectorAll(".episode-card");
+    var out = [];
+    for (var i = 0; i < cards.length; i++) {
+      var card = cards[i];
+      if (card.classList.contains("episode-card--restricted")) continue;
+      if (card.classList.contains("episode-card--unreleased")) continue;
+      out.push(card);
+    }
+    return out;
+  }
+
+  function episodeNumberOf(card, fallback) {
+    var el = card.querySelector(".episode-num");
+    var match = el && el.textContent ? el.textContent.match(/(\d+)/) : null;
+    return match ? parseInt(match[1], 10) : fallback;
+  }
+
+  function episodeNameOf(card) {
+    var el = card.querySelector(".episode-name");
+    return el && el.textContent ? el.textContent.trim() : "";
+  }
+
+  function webviewSrc() {
+    var view = document.querySelector("webview");
+    return view ? (view.getAttribute("src") || "") : "";
+  }
+
+  function waitForEpisodeSrc(previous, timeout) {
+    return new Promise(function (resolve) {
+      var started = Date.now();
+      function poll() {
+        var src = webviewSrc();
+        if (isHttp(src) && src !== previous) return resolve(src);
+        if (Date.now() - started > timeout) return resolve("");
+        setTimeout(poll, 50);
+      }
+      poll();
+    });
+  }
+
+  function delay(ms) {
+    return new Promise(function (resolve) { setTimeout(resolve, ms); });
+  }
+
+  function collectSeason() {
+    var cards = usableEpisodeCards();
+    if (!cards.length) return Promise.resolve([]);
+
+    var previous = document.querySelector(".episode-card.playing");
+    var lastSrc = webviewSrc();
+    var collected = [];
+
+    return cards.reduce(function (chain, card, index) {
+      return chain.then(function () {
+        var number = episodeNumberOf(card, index + 1);
+        var name = episodeNameOf(card);
+        card.click();
+        return waitForEpisodeSrc(lastSrc, 1800).then(function (src) {
+          if (src) {
+            lastSrc = src;
+            collected.push({ n: number, title: name, url: src });
+          }
+          return delay(40);
+        });
+      });
+    }, Promise.resolve()).then(function () {
+      if (previous && previous !== cards[cards.length - 1]) {
+        try { previous.click(); } catch (e) {}
+      }
+      return collected;
+    });
+  }
+
+  function onSeasonDownload(button) {
+    if (seasonBusy) return;
+    if (!bridge.startSeasonDownload) {
+      toast("Update the app to download a whole season.");
+      return;
+    }
+    var cards = usableEpisodeCards();
+    if (!cards.length) {
+      toast("No episodes to download in this season.");
+      return;
+    }
+
+    seasonBusy = true;
+    var label = button.innerHTML;
+    button.textContent = "Collecting\u2026";
+    button.classList.add("sb-season-dl-busy");
+    toast("Reading " + cards.length + " episode links\u2026");
+
+    collectSeason().then(function (items) {
+      if (!items.length) {
+        toast("Could not read the episode links. Try another source.");
+        return;
+      }
+      var payload = {
+        show: showTitle(),
+        season: seasonNumber(),
+        episodes: items,
+      };
+      var result = {};
+      try {
+        result = JSON.parse(bridge.startSeasonDownload(JSON.stringify(payload)) || "{}");
+      } catch (e) {
+        result = {};
+      }
+      if (result && result.reason === "permission") {
+        toast("Allow storage access, then tap Download Season again.");
+      } else if (!result || !result.ok) {
+        toast("Could not start the season download.");
+      }
+    }).catch(function (e) {
+      console.error("season download failed", e);
+      toast("Could not read the episode links.");
+    }).then(function () {
+      seasonBusy = false;
+      button.innerHTML = label;
+      button.classList.remove("sb-season-dl-busy");
+    });
+  }
+
+  function ensureSeasonButton() {
+    var selector = document.querySelector(".season-selector");
+    if (!selector) return;
+    if (!document.querySelector(".episodes-grid")) return;
+
+    var existing = selector.querySelector(".sb-season-dl");
+    if (existing) {
+      if (seasonBusy) existing.classList.add("sb-season-dl-busy");
+      return;
+    }
+
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "season-btn sb-season-dl";
+    button.innerHTML = '<span class="sb-season-dl-icon">\u2913</span> Download Season';
+    button.title = "Download every episode of the selected season";
+    button.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      onSeasonDownload(button);
+    });
+    selector.appendChild(button);
+  }
+
 
   // ---------------------------------------------------------------------
   // Hardware Back bridge (called from MainActivity.onBackPressed).
