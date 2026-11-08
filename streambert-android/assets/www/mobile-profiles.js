@@ -16,6 +16,21 @@
   "use strict";
 
   var LS = window.localStorage;
+
+  // Capture the unmodified storage methods before we install the namespace
+  // wrapper. The sync layer observes profile writes through notifyProfileChange
+  // so it can push changes without re-reading storage on a timer.
+  var nativeGet = null;
+  var nativeSet = null;
+  var nativeRemove = null;
+  try {
+    if (window.Storage && window.Storage.prototype) {
+      nativeGet = window.Storage.prototype.getItem;
+      nativeSet = window.Storage.prototype.setItem;
+      nativeRemove = window.Storage.prototype.removeItem;
+    }
+  } catch (e) {}
+
   var REGISTRY_KEY = "streambert_profiles";
   var PROFILE_KEYS = {
     saved: 1,
@@ -86,6 +101,17 @@
     } catch (e) {}
   }
 
+  // The optional GitHub Gist sync layer installs this hook. It is deliberately
+  // a no-op when sync is not loaded, so the profiles screen keeps working on
+  // its own (and in the test harness).
+  function notifyProfileChange(key, oldValue, newValue) {
+    try {
+      if (typeof window.__sbProfileChanged === "function") {
+        window.__sbProfileChanged(key, oldValue, newValue);
+      }
+    } catch (e) {}
+  }
+
   function makeId() {
     return (
       "p" +
@@ -124,6 +150,13 @@
       color: COLORS.indexOf(raw.color) >= 0 ? raw.color : COLORS[0],
       emoji: EMOJIS.indexOf(raw.emoji) >= 0 ? raw.emoji : EMOJIS[0],
       createdAt: raw.createdAt || Date.now(),
+      // Used by the optional sync layer to resolve edits made on another
+      // device (same profile id). Older registries simply default to the
+      // profile's creation time.
+      updatedAt:
+        typeof raw.updatedAt === "number"
+          ? raw.updatedAt
+          : raw.createdAt || 0,
     };
   }
 
@@ -154,9 +187,20 @@
   }
 
   function saveRegistry() {
+    var payload = null;
+    var old = null;
     try {
-      LS.setItem(REGISTRY_KEY, JSON.stringify(registry));
+      payload = JSON.stringify(registry);
+      old = nativeGet
+        ? nativeGet.call(LS, REGISTRY_KEY)
+        : LS.getItem(REGISTRY_KEY);
+      if (nativeSet) nativeSet.call(LS, REGISTRY_KEY, payload);
+      else LS.setItem(REGISTRY_KEY, payload);
     } catch (e) {}
+    // Written through the native setter on purpose: the namespace wrapper is
+    // only for the six watch-data keys. The sync layer still wants to know
+    // when profiles themselves are added, renamed or deleted.
+    if (payload !== null) notifyProfileChange(REGISTRY_KEY, old, payload);
   }
 
   function validateDraft(draft, exceptId) {
@@ -191,6 +235,7 @@
       color: valid.color,
       emoji: valid.emoji,
       createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
     registry.profiles.push(profile);
     saveRegistry();
@@ -206,6 +251,7 @@
     profile.name = valid.name;
     profile.color = valid.color;
     profile.emoji = valid.emoji;
+    profile.updatedAt = Date.now();
     saveRegistry();
     if (registry.active === id) {
       setActive(id);
@@ -276,9 +322,9 @@
     var proto = window.Storage && window.Storage.prototype;
     if (!proto) return;
 
-    var originalGet = proto.getItem;
-    var originalSet = proto.setItem;
-    var originalRemove = proto.removeItem;
+    var originalGet = nativeGet || proto.getItem;
+    var originalSet = nativeSet || proto.setItem;
+    var originalRemove = nativeRemove || proto.removeItem;
 
     function mapped(key) {
       if (typeof key !== "string" || key.indexOf("streambert_") !== 0) return key;
@@ -296,10 +342,32 @@
         return originalGet.call(this, isLocal(this) ? mapped(key) : key);
       };
       proto.setItem = function (key, value) {
-        return originalSet.call(this, isLocal(this) ? mapped(key) : key, value);
+        var target = isLocal(this) ? mapped(key) : key;
+        var old = null;
+        if (isLocal(this)) {
+          try {
+            old = originalGet.call(this, target);
+          } catch (e) {}
+        }
+        var result = originalSet.call(this, target, value);
+        if (isLocal(this)) {
+          notifyProfileChange(target, old, String(value));
+        }
+        return result;
       };
       proto.removeItem = function (key) {
-        return originalRemove.call(this, isLocal(this) ? mapped(key) : key);
+        var target = isLocal(this) ? mapped(key) : key;
+        var old = null;
+        if (isLocal(this)) {
+          try {
+            old = originalGet.call(this, target);
+          } catch (e) {}
+        }
+        var result = originalRemove.call(this, target);
+        if (isLocal(this)) {
+          notifyProfileChange(target, old, null);
+        }
+        return result;
       };
     } catch (e) {
       // If the prototype is frozen we simply run without profile isolation.
@@ -630,6 +698,15 @@
     });
     actions.appendChild(settings);
 
+    if (window.SBGistSync && typeof window.SBGistSync.open === "function") {
+      var sync = button("sb-profile-action", "Sync across devices");
+      sync.addEventListener("click", function () {
+        closeSheet();
+        window.SBGistSync.open();
+      });
+      actions.appendChild(sync);
+    }
+
     sheet.appendChild(actions);
   }
 
@@ -906,6 +983,7 @@
       color: COLORS[0],
       emoji: EMOJIS[0],
       createdAt: Date.now(),
+      updatedAt: Date.now(),
     };
     registry = { v: 1, active: profile.id, profiles: [profile] };
     migrateLegacy(profile.id);
