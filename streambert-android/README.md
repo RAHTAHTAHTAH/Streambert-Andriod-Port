@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `2.9.0-mobile` (versionCode 19)
+- **Version:** `2.9.1-mobile` (versionCode 20)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -92,19 +92,23 @@ adapt it for phones:
   detail page.
 - **Profiles.** Once two or more profiles exist, a Netflix-style
   *Who's watching?* screen appears on launch. Up to five profiles, each with an
-  emoji-and-colour avatar. The active profile's **My List**, **Continue
-  Watching**, watch history, watched markers and search history are stored
-  separately (the app's six watch-data keys are transparently namespaced, so
-  the React store needs no changes). Existing data is migrated to *Profile 1*.
+  emoji-and-colour avatar or an **uploaded photo**. Photos are cropped to a
+  square and resized on-device (256 px JPEG), stored inside the profile
+  registry, and used in the gate, sheet, editor and home avatar. The active
+  profile's **My List**, **Continue Watching**, watch history, watched markers
+  and search history are stored separately (the app's six watch-data keys are
+  transparently namespaced, so the React store needs no changes). Existing data
+  is migrated to *Profile 1*.
   The age limit, parental PIN, TMDB token and player/settings stay device-wide,
   so a new profile cannot bypass the age limit. The home avatar opens a sheet
   to switch, add, edit or delete profiles; hardware Back closes the sheet,
   editor and in-app profile gate.
-- **Cross-device sync (optional).** Profiles and watch data can be kept in step
-  across phones and tablets through a **private GitHub Gist**. The TMDB token
-  is used as a stable sync key, so devices with the same token and the same
-  GitHub account find the same Gist. Enter a GitHub token with Gist read/write
-  access once per device from the profile sheet → **Sync across devices**.
+- **Cross-device sync (optional).** Profiles (including uploaded photos) and
+  watch data can be kept in step across phones and tablets through a **private
+  GitHub Gist**. The TMDB token is used as a stable sync key, so devices with
+  the same token and the same GitHub account find the same Gist. Enter a
+  GitHub token with Gist read/write access once per device from the profile
+  sheet → **Sync across devices**.
   Pulls run on launch and resume, local changes are pushed a few seconds later,
   and deletions are tombstoned so an older device cannot resurrect a removed
   title or profile. The TMDB token, age limit, parental PIN, downloads and
@@ -137,7 +141,7 @@ one Gist. If the Gist does not exist yet, the first device creates it as a
 private Gist named `Streambert Mobile Sync <hash>`. The sync engine merges:
 
 - profiles by id, then by name (so independently created profiles with the
-  same name are not duplicated);
+  same name are not duplicated), including colour, emoji and uploaded photo;
 - My List, watched markers and saved order as unions;
 - progress by the higher percentage;
 - history by newest `watchedAt` per episode/movie;

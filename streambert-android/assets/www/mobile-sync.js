@@ -272,6 +272,21 @@
   // -----------------------------------------------------------------------
   // Registry model
   // -----------------------------------------------------------------------
+  // Uploaded avatars travel with the profile registry. The same strict
+  // validation and size cap as the profiles UI keeps a hand-edited Gist from
+  // injecting an unsupported data URL.
+  var PHOTO_MAX = 400000;
+  function cleanPhoto(value) {
+    if (typeof value !== "string") return "";
+    if (value.length > PHOTO_MAX) return "";
+    if (
+      !/^data:image\/(?:jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(value)
+    ) {
+      return "";
+    }
+    return value;
+  }
+
   function sanitizeOne(raw) {
     if (!raw || typeof raw.id !== "string" || !raw.id) return null;
     var name = typeof raw.name === "string" ? raw.name.trim() : "";
@@ -290,6 +305,7 @@
         typeof raw.emoji === "string" && raw.emoji
           ? raw.emoji.slice(0, 8)
           : "🎬",
+      photo: cleanPhoto(raw.photo),
       createdAt: created || updated || Date.now(),
       updatedAt: updated || created || 0,
     };
@@ -720,6 +736,7 @@
     if (!registry || registry.profiles.length !== 1) return false;
     var profile = registry.profiles[0];
     if (profile.name !== "Profile 1") return false;
+    if (profile.photo) return false;
     return !hasAnyData((localData && localData[profile.id]) || readData(profile.id));
   }
 
@@ -826,6 +843,7 @@
           }
           existing.color = clean.color;
           existing.emoji = clean.emoji;
+          existing.photo = clean.photo;
           existing.updatedAt = clean.updatedAt;
         }
         return;
@@ -837,6 +855,7 @@
         if ((clean.updatedAt || 0) > (sameName.updatedAt || 0)) {
           sameName.color = clean.color;
           sameName.emoji = clean.emoji;
+          sameName.photo = clean.photo;
           sameName.updatedAt = clean.updatedAt;
         }
         return;

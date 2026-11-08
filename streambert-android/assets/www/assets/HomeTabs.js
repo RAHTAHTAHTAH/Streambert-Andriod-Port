@@ -457,10 +457,20 @@ export function HomeTabs(props) {
           className: "sb-home-avatar",
           title: "Profiles",
           "aria-label": profile ? "Profile: " + profile.name : "Profiles",
-          style: profile ? { background: profile.color } : undefined,
+          style: profile
+            ? {
+                backgroundColor: profile.color,
+                backgroundImage: profile.photo
+                  ? 'url("' + profile.photo + '")'
+                  : "none",
+                backgroundSize: profile.photo ? "cover" : undefined,
+                backgroundPosition: profile.photo ? "center" : undefined,
+                backgroundRepeat: profile.photo ? "no-repeat" : undefined,
+              }
+            : undefined,
           onClick: openProfiles,
         },
-        profile ? profile.emoji : "S"
+        profile ? (profile.photo ? "" : profile.emoji) : "S"
       )
     ),
     React.createElement(TabBar, { active: tab, onSelectTab: selectTab }),

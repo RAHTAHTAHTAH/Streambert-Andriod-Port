@@ -1220,6 +1220,14 @@ body {
     cursor: pointer;
   }
 
+  .sb-home-avatar.has-photo {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    color: transparent;
+    font-size: 0;
+  }
+
   .sb-home-tabs {
     gap: 20px;
     padding: 2px 16px 0;
@@ -1685,6 +1693,13 @@ body {
   line-height: 1;
 }
 
+.sb-profile-avatar.has-photo {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: transparent;
+}
+
 .sb-profile-avatar--tile {
   width: 100%;
   max-width: 132px;
@@ -1956,6 +1971,59 @@ body {
   font-weight: 700;
   letter-spacing: 1.4px;
   text-transform: uppercase;
+}
+
+.sb-profile-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sb-profile-photo-upload,
+.sb-profile-photo-remove {
+  padding: 9px 12px;
+  border: 1px solid #3a3a3a;
+  border-radius: 8px;
+  background: #232323;
+  color: #ffffff;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sb-profile-photo-upload:active,
+.sb-profile-photo-remove:active {
+  background: #2f2f2f;
+}
+
+.sb-profile-photo-upload:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.sb-profile-photo-remove {
+  border-color: #4a2a2a;
+  background: transparent;
+  color: #ff6b6b;
+}
+
+.sb-profile-file {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.sb-profile-hint {
+  margin-top: 7px;
+  color: #8c8c8c;
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .sb-profile-colors {

@@ -120,6 +120,82 @@
     );
   }
 
+  // Uploaded avatars are stored as small JPEG data URLs inside the profile
+  // registry. Keep the cap generous enough for a 256px photo but well below
+  // the storage quota and the Gist file limit.
+  var PHOTO_MAX = 400000;
+  function cleanPhoto(value) {
+    if (typeof value !== "string") return "";
+    if (value.length > PHOTO_MAX) return "";
+    if (
+      !/^data:image\/(?:jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/i.test(value)
+    ) {
+      return "";
+    }
+    return value;
+  }
+
+  function processPhotoFile(file, background, done) {
+    if (!file) {
+      done("Choose an image first.");
+      return;
+    }
+    if (!/^image\//i.test(file.type || "")) {
+      done("Choose an image file.");
+      return;
+    }
+    if (file.size > 12 * 1024 * 1024) {
+      done("That image is too large (max 12 MB).");
+      return;
+    }
+    if (typeof FileReader !== "function") {
+      done("Image upload is not available on this device.");
+      return;
+    }
+
+    var reader = new FileReader();
+    reader.onerror = function () {
+      done("Could not read that image.");
+    };
+    reader.onload = function () {
+      var img = new Image();
+      img.onerror = function () {
+        done("That image format is not supported.");
+      };
+      img.onload = function () {
+        try {
+          var size = 256;
+          var canvas = document.createElement("canvas");
+          canvas.width = size;
+          canvas.height = size;
+          var ctx = canvas.getContext("2d");
+          if (!ctx) {
+            done("Image editing is not available on this device.");
+            return;
+          }
+          var sourceWidth = img.naturalWidth || img.width || size;
+          var sourceHeight = img.naturalHeight || img.height || size;
+          var side = Math.min(sourceWidth, sourceHeight);
+          var sx = (sourceWidth - side) / 2;
+          var sy = (sourceHeight - side) / 2;
+          ctx.fillStyle = background || "#181818";
+          ctx.fillRect(0, 0, size, size);
+          ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+          var data = canvas.toDataURL("image/jpeg", 0.84);
+          if (!data || data.length > PHOTO_MAX) {
+            done("That photo is too detailed. Try a smaller image.");
+            return;
+          }
+          done(null, data);
+        } catch (e) {
+          done("Could not process that image.");
+        }
+      };
+      img.src = String(reader.result || "");
+    };
+    reader.readAsDataURL(file);
+  }
+
   // -----------------------------------------------------------------------
   // Registry and profile CRUD
   // -----------------------------------------------------------------------
@@ -149,6 +225,7 @@
       name: name.slice(0, 24),
       color: COLORS.indexOf(raw.color) >= 0 ? raw.color : COLORS[0],
       emoji: EMOJIS.indexOf(raw.emoji) >= 0 ? raw.emoji : EMOJIS[0],
+      photo: cleanPhoto(raw.photo),
       createdAt: raw.createdAt || Date.now(),
       // Used by the optional sync layer to resolve edits made on another
       // device (same profile id). Older registries simply default to the
@@ -219,6 +296,7 @@
       name: name,
       color: COLORS.indexOf(draft.color) >= 0 ? draft.color : COLORS[0],
       emoji: EMOJIS.indexOf(draft.emoji) >= 0 ? draft.emoji : EMOJIS[0],
+      photo: cleanPhoto(draft.photo),
     };
   }
 
@@ -234,6 +312,7 @@
       name: valid.name,
       color: valid.color,
       emoji: valid.emoji,
+      photo: valid.photo,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -251,6 +330,7 @@
     profile.name = valid.name;
     profile.color = valid.color;
     profile.emoji = valid.emoji;
+    profile.photo = valid.photo;
     profile.updatedAt = Date.now();
     saveRegistry();
     if (registry.active === id) {
@@ -385,6 +465,7 @@
       name: profile.name,
       color: profile.color,
       emoji: profile.emoji,
+      photo: profile.photo || "",
     };
     // Remember the choice for this WebView session. In-app reloads (theme,
     // language, backup restore) then skip the "Who's watching?" gate; a fresh
@@ -404,12 +485,24 @@
     }
   }
 
+  function paintAvatar(node, profile) {
+    var photo = profile && profile.photo ? profile.photo : "";
+    node.textContent = photo ? "" : String((profile && profile.emoji) || "");
+    if (node.style) {
+      node.style.backgroundColor = (profile && profile.color) || "";
+      node.style.backgroundImage = photo ? 'url("' + photo + '")' : "none";
+      node.style.backgroundSize = photo ? "cover" : "";
+      node.style.backgroundPosition = photo ? "center" : "";
+      node.style.backgroundRepeat = photo ? "no-repeat" : "";
+    }
+    if (node.classList) node.classList.toggle("has-photo", !!photo);
+  }
+
   function updateAvatarDom() {
     if (!currentProfile) return;
     var avatar = document.querySelector(".sb-home-avatar");
     if (!avatar) return;
-    avatar.textContent = currentProfile.emoji;
-    avatar.style.background = currentProfile.color;
+    paintAvatar(avatar, currentProfile);
     avatar.setAttribute("aria-label", "Profile: " + currentProfile.name);
     avatar.title = "Profiles";
   }
@@ -482,8 +575,7 @@
   // -----------------------------------------------------------------------
   function avatarNode(profile, extraClass) {
     var node = el("div", "sb-profile-avatar" + (extraClass ? " " + extraClass : ""));
-    node.style.background = profile.color;
-    node.textContent = profile.emoji;
+    paintAvatar(node, profile);
     return node;
   }
 
@@ -746,6 +838,7 @@
       name: existing ? existing.name : "",
       color: existing ? existing.color : COLORS[0],
       emoji: existing ? existing.emoji : EMOJIS[0],
+      photo: existing ? existing.photo || "" : "",
     };
 
     closeEditor();
@@ -780,6 +873,73 @@
     });
     dialog.appendChild(nameInput);
 
+    var errorEl = el("div", "sb-profile-error");
+
+    dialog.appendChild(el("div", "sb-profile-label", "Photo"));
+    var photoRow = el("div", "sb-profile-photo-row");
+    var upload = button("sb-profile-photo-upload", "Upload photo");
+    var removePhoto = button("sb-profile-photo-remove", "Remove photo");
+    var fileInput = el("input", "sb-profile-file");
+    fileInput.type = "file";
+    fileInput.accept = "image/*";
+    fileInput.setAttribute("aria-label", "Choose a profile photo");
+    fileInput.setAttribute("tabindex", "-1");
+
+    function updatePhotoControls() {
+      upload.textContent = draft.photo ? "Change photo" : "Upload photo";
+      removePhoto.style.display = draft.photo ? "" : "none";
+    }
+
+    upload.addEventListener("click", function () {
+      errorEl.textContent = "";
+      fileInput.value = "";
+      try {
+        fileInput.click();
+      } catch (e) {
+        errorEl.textContent = "Could not open the photo picker.";
+      }
+    });
+
+    removePhoto.addEventListener("click", function () {
+      draft.photo = "";
+      paintAvatar(preview, draft);
+      updatePhotoControls();
+      errorEl.textContent = "";
+    });
+
+    fileInput.addEventListener("change", function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      upload.disabled = true;
+      upload.textContent = "Processing…";
+      errorEl.textContent = "";
+      processPhotoFile(file, draft.color, function (error, dataUrl) {
+        upload.disabled = false;
+        if (error) {
+          updatePhotoControls();
+          errorEl.textContent = error;
+          return;
+        }
+        draft.photo = dataUrl;
+        paintAvatar(preview, draft);
+        updatePhotoControls();
+      });
+    });
+
+    photoRow.appendChild(upload);
+    photoRow.appendChild(removePhoto);
+    photoRow.appendChild(fileInput);
+    dialog.appendChild(photoRow);
+    dialog.appendChild(
+      el(
+        "div",
+        "sb-profile-hint",
+        "Photos are cropped to a square; choosing an icon removes the photo."
+      )
+    );
+    updatePhotoControls();
+    dialog.appendChild(errorEl);
+
     dialog.appendChild(el("div", "sb-profile-label", "Color"));
     var colors = el("div", "sb-profile-colors");
     COLORS.forEach(function (color) {
@@ -788,7 +948,7 @@
       swatch.setAttribute("aria-label", "Color " + color);
       swatch.addEventListener("click", function () {
         draft.color = color;
-        preview.style.background = color;
+        preview.style.backgroundColor = color;
         Array.prototype.forEach.call(
           colors.querySelectorAll(".sb-profile-color"),
           function (node) {
@@ -809,7 +969,9 @@
       );
       choice.addEventListener("click", function () {
         draft.emoji = emoji;
-        preview.textContent = emoji;
+        draft.photo = "";
+        paintAvatar(preview, draft);
+        updatePhotoControls();
         Array.prototype.forEach.call(
           emojis.querySelectorAll(".sb-profile-emoji"),
           function (node) {
@@ -820,9 +982,6 @@
       emojis.appendChild(choice);
     });
     dialog.appendChild(emojis);
-
-    var errorEl = el("div", "sb-profile-error");
-    dialog.appendChild(errorEl);
 
     var actions = el("div", "sb-profile-editor-actions");
 
@@ -982,6 +1141,7 @@
       name: "Profile 1",
       color: COLORS[0],
       emoji: EMOJIS[0],
+      photo: "",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };

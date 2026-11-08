@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `2.9.0-mobile`, versionCode 19) that reuses the Streambert React
+(version `2.9.1-mobile`, versionCode 20) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -17,11 +17,11 @@ Core browsing & playback
 - Home page with hero banner, trending, top rated, recommended and continue-watching rows
 - Home tabs for Movies, TV Shows and Anime (TMDB lists, same age filtering)
 - Netflix-style profiles: a "Who's watching?" picker once two or more profiles
-  exist, up to five emoji avatars, and separate My List / Continue Watching /
-  history / watched / search history for each profile
-- Optional cross-device sync: profiles and per-profile watch data are merged
-  through a private GitHub Gist keyed by the TMDB token; a GitHub token with
-  Gist read/write access is entered once per device
+  exist, up to five emoji or uploaded-photo avatars, and separate My List /
+  Continue Watching / history / watched / search history for each profile
+- Optional cross-device sync: profiles (with photos) and per-profile watch data
+  are merged through a private GitHub Gist keyed by the TMDB token; a GitHub
+  token with Gist read/write access is entered once per device
 - Netflix-style phone UI: charcoal theme, Top 10 row, horizontal poster rows,
   swipeable home tabs and a full-bleed detail page
 - Movie and TV detail pages (cast, score, runtime, overview)
@@ -144,6 +144,7 @@ The resulting APK is signed with the debug key and is ~0.5 MB.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.9.1-mobile` (20) — custom profile photos, uploaded from the device and synced
 - `2.9.0-mobile` (19) — optional cross-device sync through a private GitHub Gist
 - `2.8.0-mobile` (18) — Netflix-style profiles with per-profile watch data
 - `2.7.9-mobile` (17) — Netflix-style theme, Top 10 row, swipeable home tabs
