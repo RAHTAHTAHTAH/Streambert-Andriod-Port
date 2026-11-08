@@ -275,14 +275,24 @@
     clearWatchData: function () {
       try {
         if (LS) {
+          var active = window.SB_PROFILE && window.SB_PROFILE.id;
+          var prefix = active ? "streambert_p_" + active + "_" : "";
           Object.keys(LS).forEach(function (k) {
+            var isWatch =
+              k === "streambert_progress" ||
+              k === "streambert_watched" ||
+              k === "streambert_history" ||
+              (prefix &&
+                (k === prefix + "progress" ||
+                  k === prefix + "watched" ||
+                  k === prefix + "history"));
             if (
-              k.indexOf("streambert_progress") === 0 ||
-              k.indexOf("streambert_watched") === 0 ||
-              k.indexOf("streambert_history") === 0 ||
+              isWatch ||
               k.indexOf("dlTime_") === 0 ||
               k.indexOf("dlDur_") === 0
-            ) LS.removeItem(k);
+            ) {
+              LS.removeItem(k);
+            }
           });
         }
       } catch (e) {}

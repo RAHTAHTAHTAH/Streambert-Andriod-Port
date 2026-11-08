@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `2.7.6-mobile` (versionCode 14)
+- **Version:** `2.8.0-mobile` (versionCode 18)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -90,6 +90,16 @@ adapt it for phones:
   app's ANIME badge; the HiAnime source is not available in this build. Rows
   are cached for ten minutes, and the last tab is restored after visiting a
   detail page.
+- **Profiles.** Once two or more profiles exist, a Netflix-style
+  *Who's watching?* screen appears on launch. Up to five profiles, each with an
+  emoji-and-colour avatar. The active profile's **My List**, **Continue
+  Watching**, watch history, watched markers and search history are stored
+  separately (the app's six watch-data keys are transparently namespaced, so
+  the React store needs no changes). Existing data is migrated to *Profile 1*.
+  The age limit, parental PIN, TMDB token and player/settings stay device-wide,
+  so a new profile cannot bypass the age limit. The home avatar opens a sheet
+  to switch, add, edit or delete profiles; hardware Back closes the sheet,
+  editor and in-app profile gate.
 - The hero is shorter, the detail page centres its poster and uses a
   two-column action grid, and search/settings/downloads get phone padding.
 - The player card shows the app's **source chip** (e.g. `Vidrift`) at the top

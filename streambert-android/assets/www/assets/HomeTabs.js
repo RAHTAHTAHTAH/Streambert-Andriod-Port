@@ -106,6 +106,16 @@ let lastTab = "home";
 // lands where the user left off instead of jumping to the top.
 const scrollPositions = Object.create(null);
 
+function openProfiles() {
+  try {
+    if (window.SBProfiles && typeof window.SBProfiles.openSheet === "function") {
+      window.SBProfiles.openSheet();
+      return;
+    }
+  } catch (e) {}
+  openSettings();
+}
+
 function openSettings() {
   try {
     const buttons = document.querySelectorAll(".sidebar-btn");
@@ -427,6 +437,8 @@ export function HomeTabs(props) {
     if (next >= 0 && next < TABS.length) selectTab(TABS[next].id);
   }
 
+  const profile = typeof window !== "undefined" ? window.SB_PROFILE : null;
+
   return React.createElement(
     "div",
     {
@@ -443,11 +455,12 @@ export function HomeTabs(props) {
         {
           type: "button",
           className: "sb-home-avatar",
-          title: "Settings",
-          "aria-label": "Settings",
-          onClick: openSettings,
+          title: "Profiles",
+          "aria-label": profile ? "Profile: " + profile.name : "Profiles",
+          style: profile ? { background: profile.color } : undefined,
+          onClick: openProfiles,
         },
-        "S"
+        profile ? profile.emoji : "S"
       )
     ),
     React.createElement(TabBar, { active: tab, onSelectTab: selectTab }),
