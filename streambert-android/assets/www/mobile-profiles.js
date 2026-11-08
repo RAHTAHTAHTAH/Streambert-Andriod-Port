@@ -779,12 +779,6 @@
     dialog.appendChild(actions);
     editorEl.appendChild(dialog);
     document.body.appendChild(editorEl);
-
-    setTimeout(function () {
-      try {
-        nameInput.focus();
-      } catch (e) {}
-    }, 50);
   }
 
   function closeEditor() {

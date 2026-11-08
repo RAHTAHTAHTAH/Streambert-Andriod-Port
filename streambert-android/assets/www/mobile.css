@@ -1893,7 +1893,7 @@ body {
   inset: 0;
   z-index: 9500;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   padding: 20px;
   background: rgba(0, 0, 0, 0.72);
@@ -1903,6 +1903,7 @@ body {
 .sb-profile-editor {
   width: 100%;
   max-width: 380px;
+  margin: auto;
   padding: 20px;
   box-sizing: border-box;
   border-radius: 14px;
