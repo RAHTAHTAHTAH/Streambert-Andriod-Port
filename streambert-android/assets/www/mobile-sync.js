@@ -1028,6 +1028,63 @@
     return out;
   }
 
+  // Comparison helpers. `active`, profile order and the order of the
+  // saved/search lists are device-local presentation details; two devices
+  // must not keep pushing the Gist back and forth just because they display
+  // those in a different order.
+  function registrySig(registry) {
+    return {
+      v: registry.v,
+      profiles: (registry.profiles || []).slice().sort(function (a, b) {
+        return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+      }),
+    };
+  }
+
+  function dataSig(data) {
+    var out = {};
+    Object.keys(data || {})
+      .sort()
+      .forEach(function (profileId) {
+        var source = data[profileId] || {};
+        var item = {};
+        if (source.saved !== undefined) item.saved = source.saved;
+        if (source.watched !== undefined) item.watched = source.watched;
+        if (source.progress !== undefined) item.progress = source.progress;
+        if (source.savedOrder !== undefined) {
+          item.savedOrder = Array.isArray(source.savedOrder)
+            ? source.savedOrder.slice().map(String).sort()
+            : source.savedOrder;
+        }
+        if (source.history !== undefined) {
+          item.history = Array.isArray(source.history)
+            ? source.history.slice().sort(function (a, b) {
+                return stable(a).localeCompare(stable(b));
+              })
+            : source.history;
+        }
+        if (source.searchHistory !== undefined) {
+          item.searchHistory = Array.isArray(source.searchHistory)
+            ? source.searchHistory.map(stable).sort()
+            : source.searchHistory;
+        }
+        out[profileId] = item;
+      });
+    return out;
+  }
+
+  function contentSig(registry, data) {
+    return stable({ registry: registrySig(registry), data: dataSig(data) });
+  }
+
+  function fullSig(registry, data, meta) {
+    return stable({
+      registry: registrySig(registry),
+      data: dataSig(data),
+      meta: meta,
+    });
+  }
+
   function mergePayloads(local, remote, key) {
     var localReg = sanitizeRegistry(local.registry);
     var remoteReg = remote ? sanitizeRegistry(remote.registry) : { v: 1, active: null, profiles: [] };
@@ -1036,6 +1093,16 @@
 
     var deletedProfiles = mergeDeletedProfiles(local.meta, remote && remote.meta);
     var info = mergeRegistry(localReg, remoteReg, localData, deletedProfiles);
+
+    // Canonical profile order (creation order, then id) so the same set of
+    // profiles is written the same way on every device.
+    info.registry.profiles.sort(function (a, b) {
+      var ca = Number(a.createdAt) || 0;
+      var cb = Number(b.createdAt) || 0;
+      if (ca !== cb) return ca - cb;
+      return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+    });
+
     var meta = mergeMeta(local.meta, remote && remote.meta, info.idMap);
     meta.deletedProfiles = deletedProfiles;
 
@@ -1079,20 +1146,12 @@
       meta: meta,
     };
 
-    var localSig = stable({ registry: localReg, data: localData });
-    var mergedSig = stable({ registry: info.registry, data: data });
+    var localSig = contentSig(localReg, localData);
+    var mergedSig = contentSig(info.registry, data);
     var remoteSig = remote
-      ? stable({
-          registry: remoteReg,
-          data: remoteData,
-          meta: normalizeMeta(remote.meta),
-        })
+      ? fullSig(remoteReg, remoteData, normalizeMeta(remote.meta))
       : "";
-    var mergedFullSig = stable({
-      registry: info.registry,
-      data: data,
-      meta: meta,
-    });
+    var mergedFullSig = fullSig(info.registry, data, meta);
 
     return {
       payload: payload,
