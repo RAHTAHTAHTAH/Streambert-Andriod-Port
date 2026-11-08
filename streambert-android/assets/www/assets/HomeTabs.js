@@ -102,6 +102,22 @@ const SUBTITLES = {
 
 // Restore the last chosen tab when the user comes back from a detail page.
 let lastTab = "home";
+// Remember the scroll offset of each tab so returning from a detail page
+// lands where the user left off instead of jumping to the top.
+const scrollPositions = Object.create(null);
+
+function openSettings() {
+  try {
+    const buttons = document.querySelectorAll(".sidebar-btn");
+    for (let i = 0; i < buttons.length; i++) {
+      const label = (buttons[i].getAttribute("aria-label") || buttons[i].textContent || "").trim();
+      if (/^Settings$/i.test(label)) {
+        buttons[i].click();
+        return;
+      }
+    }
+  } catch (e) {}
+}
 
 const cache = new Map();
 
@@ -310,23 +326,130 @@ function Catalog(props) {
 
 export function HomeTabs(props) {
   const [tab, setTab] = React.useState(lastTab);
+  const touch = React.useRef(null);
 
   const selectTab = React.useCallback(function (id) {
     lastTab = id;
     setTab(id);
   }, []);
 
+  // Tapping Home in the bottom nav while already on the home route returns
+  // from the Movies / TV / Anime tab to the mixed feed.
+  React.useEffect(
+    function () {
+      const handler = function () {
+        selectTab("home");
+      };
+      window.addEventListener("streambert:home", handler);
+      return function () {
+        window.removeEventListener("streambert:home", handler);
+      };
+    },
+    [selectTab]
+  );
+
+  // Save the current offset while scrolling (and when the tab/page unmounts).
   React.useEffect(
     function () {
       const main = document.querySelector(".main");
-      if (main) main.scrollTop = 0;
+      if (!main) return undefined;
+      const onScroll = function () {
+        scrollPositions[tab] = main.scrollTop;
+      };
+      main.addEventListener("scroll", onScroll, { passive: true });
+      return function () {
+        scrollPositions[tab] = main.scrollTop;
+        main.removeEventListener("scroll", onScroll);
+      };
     },
     [tab]
   );
 
+  // Restore this tab's offset. Content loads after mount, so retry briefly
+  // until the page is tall enough to honour it.
+  React.useEffect(
+    function () {
+      const main = document.querySelector(".main");
+      if (!main) return undefined;
+      const target = scrollPositions[tab] || 0;
+      let tries = 0;
+      let timer = null;
+      const step = function () {
+        if (!main.isConnected) return;
+        const tall =
+          target === 0 ||
+          main.scrollHeight >= target + Math.min(600, main.clientHeight);
+        if (tall || tries >= 10) {
+          main.scrollTop = target;
+          if (target > 0) scrollPositions[tab] = target;
+          return;
+        }
+        tries += 1;
+        timer = setTimeout(step, 150);
+      };
+      timer = setTimeout(step, 0);
+      return function () {
+        if (timer) clearTimeout(timer);
+      };
+    },
+    [tab]
+  );
+
+  function onTouchStart(e) {
+    if (!e.touches || e.touches.length !== 1) return;
+    const target = e.target;
+    if (
+      target &&
+      target.closest &&
+      target.closest(
+        ".carousel-wrapper, .sb-top10-strip, .cards-grid, .scroll-row, .sb-pin-overlay"
+      )
+    ) {
+      return;
+    }
+    touch.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
+  }
+
+  function onTouchEnd(e) {
+    const start = touch.current;
+    touch.current = null;
+    if (!start || !e.changedTouches || e.changedTouches.length !== 1) return;
+    const dx = e.changedTouches[0].clientX - start.x;
+    const dy = e.changedTouches[0].clientY - start.y;
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+    const index = TABS.map(function (item) {
+      return item.id;
+    }).indexOf(tab);
+    const next = dx < 0 ? index + 1 : index - 1;
+    if (next >= 0 && next < TABS.length) selectTab(TABS[next].id);
+  }
+
   return React.createElement(
     "div",
-    { className: "sb-home-wrap" },
+    {
+      className: "sb-home-wrap",
+      onTouchStart: onTouchStart,
+      onTouchEnd: onTouchEnd,
+    },
+    React.createElement(
+      "div",
+      { className: "sb-home-brand" },
+      React.createElement("span", { className: "sb-home-logo" }, "STREAMBERT"),
+      React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "sb-home-avatar",
+          title: "Settings",
+          "aria-label": "Settings",
+          onClick: openSettings,
+        },
+        "S"
+      )
+    ),
     React.createElement(TabBar, { active: tab, onSelectTab: selectTab }),
     tab === "home"
       ? props.home

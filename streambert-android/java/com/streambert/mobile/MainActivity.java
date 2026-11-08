@@ -66,8 +66,8 @@ public class MainActivity extends Activity {
         securePrefs = getSharedPreferences(PREFS, MODE_PRIVATE);
 
         Window window = getWindow();
-        window.setStatusBarColor(Color.rgb(10, 10, 10));
-        window.setNavigationBarColor(Color.rgb(10, 10, 10));
+        window.setStatusBarColor(Color.rgb(20, 20, 20));
+        window.setNavigationBarColor(Color.rgb(20, 20, 20));
 
         FrameLayout root = new FrameLayout(this);
         root.setBackgroundColor(Color.BLACK);

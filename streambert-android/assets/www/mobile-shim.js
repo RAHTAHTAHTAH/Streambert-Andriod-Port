@@ -556,6 +556,22 @@
     setTimeout(function () { suppressingDownloadModal = false; }, 200);
   }
 
+  // Netflix-style wording for the detail page's saved state. The button
+  // otherwise reads "Save" / "Saved".
+  function normalizeDetailActions() {
+    var buttons = document.querySelectorAll(".detail-actions button");
+    for (var i = 0; i < buttons.length; i++) {
+      var btn = buttons[i];
+      for (var j = 0; j < btn.childNodes.length; j++) {
+        var node = btn.childNodes[j];
+        if (node.nodeType !== 3) continue;
+        if (/^\s*Saved?\s*$/.test(node.nodeValue)) {
+          node.nodeValue = "My List";
+        }
+      }
+    }
+  }
+
   var chromePending = false;
   function refreshChrome() {
     if (chromePending) return;
@@ -564,6 +580,7 @@
       chromePending = false;
       try { normalizeNav(); } catch (e) {}
       try { classifyPage(); } catch (e) {}
+      try { normalizeDetailActions(); } catch (e) {}
       try { ensureSeasonButton(); } catch (e) {}
     };
     if (window.requestAnimationFrame) window.requestAnimationFrame(run);
@@ -788,6 +805,21 @@
     childList: true,
     subtree: true,
     characterData: true,
+  });
+
+  // Tapping the already-active bottom-nav item behaves like Netflix: it
+  // scrolls back to the top (and Home also leaves the Movies/TV/Anime tab).
+  document.addEventListener("click", function (e) {
+    var btn = e.target && e.target.closest ? e.target.closest(".sidebar-btn.active") : null;
+    if (!btn) return;
+    var label = (btn.getAttribute("aria-label") || btn.textContent || "").trim();
+    if (/^Home$/i.test(label)) {
+      try { window.dispatchEvent(new CustomEvent("streambert:home")); } catch (err) {}
+    }
+    var main = document.querySelector(".main");
+    if (!main) return;
+    if (main.scrollTo) main.scrollTo({ top: 0, behavior: "smooth" });
+    else main.scrollTop = 0;
   });
 
   // ---------------------------------------------------------------------

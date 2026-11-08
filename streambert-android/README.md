@@ -59,6 +59,16 @@ adapt it for phones:
   episodes whose file is already in `Download/Streambert` are not fetched
   twice. If a hoster will not autoplay, the downloader shows the player page
   and waits for you to tap play before moving on.
+- **Netflix-style theme.** Charcoal surfaces, a red wordmark bar with a
+  profile-style Settings shortcut, bold white row titles, horizontal
+  poster rows, white Play buttons and a full-bleed detail page (the desktop
+  poster column is hidden on phones). Detail buttons read **My List**.
+- **Top 10 Today.** A ranked row of ten trending titles with the large
+  outlined numerals sits directly under the hero.
+- **Home tab gestures.** Swipe left/right anywhere outside a poster row to
+  move between Home, Movies, TV Shows and Anime. Scroll positions are
+  remembered per tab and after returning from a detail page; tapping the
+  active Home button returns to the mixed feed and scrolls to the top.
 - **Age limit.** When a limit is set in Settings → Content, titles above it are
   hidden from Home, Trending, Top Rated, Recommended, Continue Watching, the
   Library/Watchlist/History, search results and genre pages. Titles without a
