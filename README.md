@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `2.11.0-mobile`, versionCode 22) that reuses the Streambert React
+(version `1.0.2`, versionCode 23) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -197,6 +197,7 @@ that instead of starting a doomed install.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `1.0.2` (23) — first build under the `1.0.x` numbering used by the GitHub releases; contains the built-in updater and the low-end performance work
 - `2.11.0-mobile` (22) — smoother on low-end devices: immutable asset caching, cheap rendering profile, memory-pressure handling
 - `2.10.0-mobile` (21) — built-in automatic APK updater (check, download, verify, install)
 - `2.9.1-mobile` (20) — custom profile photos, uploaded from the device and synced
