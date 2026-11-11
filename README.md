@@ -11,43 +11,6 @@ emulated by `assets/www/mobile-shim.js`, which routes calls to the
 
 ---
 
-## Screenshots
-
-The same React renderer runs on Android, so the UI below is what ships in the
-APK (captured from the renderer in a desktop browser).
-
-### Home — browse by genre
-
-![Home screen](docs/screenshots/home.png)
-
-The home page keeps the hero banner, trending and continue-watching rows, and
-adds a **Browse by Genre** section: six poster carousels (Action, Comedy,
-Sci-Fi for movies and series) built from the same row component as Trending,
-with a compact genre-chip strip below for the full genre browser.
-
-### Profiles — who's watching
-
-![Profiles dialog](docs/screenshots/profiles.png)
-
-Netflix-style profiles: a "Who's watching?" picker once two or more profiles
-exist, up to five emoji or uploaded-photo avatars, and separate My List /
-Continue Watching / history / watched / search history for each profile.
-Profiles (with photos) and per-profile watch data can be merged across devices
-through a private GitHub Gist.
-
-### Settings
-
-![Settings page](docs/screenshots/settings.png)
-
-The full desktop settings surface, adapted for mobile: TMDB token and metadata
-language, age rating and parental controls with an optional 4-digit PIN,
-playback (trailer source, autoplay, anime intro skip, subtitles), appearance
-(theme, accent colour, compact grid, reduced animations), home-page layout and
-row visibility, library sort order, backups, downloads and storage. The App
-Version section also hosts the built-in updater controls.
-
----
-
 ## 1. Original Streambert features (ported to Android)
 
 Core browsing & playback
