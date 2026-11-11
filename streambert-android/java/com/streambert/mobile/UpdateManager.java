@@ -67,7 +67,7 @@ public final class UpdateManager {
      * in README.md. Point this at wherever the APKs are published.
      */
     static final String RELEASE_URL =
-            "https://api.github.com/repos/RAHTAHTAHTAH/Streambert-Andriod-Port/releases/latest";
+            "https://api.github.com/repos/RAHTAHTAHTAH/Streambert-Android-Port/releases/latest";
 
     /** A background check runs at most this often, also across restarts. */
     private static final long CHECK_INTERVAL_MS = 12L * 60L * 60L * 1000L;
