@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `1.0.2` (versionCode 23)
+- **Version:** `1.0.4` (versionCode 25)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -233,6 +233,64 @@ The app updates itself — no more manual sideloading for every build.
 Settings → App Version has an "Automatic checks" toggle, a "Check for updates"
 button, and the current/last-checked state. `REQUEST_INSTALL_PACKAGES` is the
 only new permission; nothing is downloaded unless a check finds a newer build.
+
+## Secrets at rest
+
+Three things on the device are secrets: the TMDB API token, the GitHub token
+used for Gist sync, and the parental PIN with its recovery code. All of them go
+through `window.Android.secureGet`/`secureSet`, which now write to
+`SecureStore`.
+
+- **Encrypted with a Keystore key.** `SecureStore` generates an AES-256 key
+  inside the Android Keystore (`streambert.secrets.v1` — non-exportable, bound
+  to this app on this device) and seals every value with AES-GCM: random 12-byte
+  IV per write, 128-bit tag. The preferences file holds only
+  `v1:<base64(iv|ciphertext)>`. A value that no longer decrypts (wiped Keystore,
+  restored file) is dropped rather than crashing the app.
+- **The PIN is never stored.** `PinHash` converts the 4-digit PIN and the
+  recovery code into `pbkdf2$<iterations>$<salt>$<hash>` (PBKDF2-HMAC-SHA1, 100k
+  iterations, 16-byte random salt, constant-time comparison) and only that
+  record is kept, inside `SecureStore`. Because nothing on disk can reproduce
+  the PIN, the settings card no longer offers "View PIN" — it can only be
+  changed or reset.
+- **Migration.** Values written by older builds were plaintext. They are still
+  read, so nobody loses a token or gets locked out, and are re-written encrypted
+  the first time they are touched; a legacy plaintext PIN is hashed on first
+  load.
+
+`allowBackup="false"` was already set, so these files never reach device
+backups. The limits are worth stating plainly: an attacker who can run code as
+this app on a rooted device can still ask the app to decrypt what the app can
+read, and a 4-digit PIN is only 10,000 possibilities — hashing prevents casual
+disclosure, not a determined offline attack that already holds the Keystore key.
+
+## Update integrity
+
+The updater does not trust the transport or the signing key. Before an APK is
+handed to the installer it has to pass three checks, in this order:
+
+1. **SHA-256 digest.** The release publishes a digest for the APK asset (GitHub
+   records `sha256:…` for every upload). `Digests.matches()` hashes the bytes
+   that were actually written to the cache and compares them in constant time.
+   A mismatch, a truncated transfer or a size that disagrees with the release
+   discards the file and shows an error; a release that publishes no digest is
+   refused rather than installed.
+2. **Package and version.** The archive must be `com.streambert.mobile` and its
+   versionCode must be higher than the installed one.
+3. **Signing key.** The archive's signer must equal the installed app's signer,
+   or Android would refuse the upgrade anyway. This fails closed when either
+   key cannot be read.
+
+The digest is the check that proves integrity. The signing key only proves that
+Android will accept the upgrade: the debug keystore is committed in this
+repository, so it is not a secret and cannot authenticate a release on its own.
+Download URLs must be `https://` — an `http://` release URL is ignored — and
+`Digests` is covered by a standalone test (`digest` hashes are compared against
+`sha256sum` for a real APK, with tampering, truncation and malformed-input
+cases).
+
+For a plain JSON manifest release, add `"sha256"` next to `apkUrl`; for a
+GitHub release nothing extra is needed, GitHub supplies the digest.
 
 ## Performance on low-end devices
 

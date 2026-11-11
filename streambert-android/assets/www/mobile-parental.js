@@ -3,8 +3,10 @@
  * -----------------------------------------------------------
  * Adds a "Parental PIN" card below the age rating controls and gates the
  * Save button of that section behind a 4-digit PIN. The PIN and the recovery
- * code live in the same Android secure storage (SharedPreferences) used for
- * the TMDB token; if that bridge is missing, localStorage is used instead.
+ * code are stored as salted PBKDF2 records (never as plain text) inside the
+ * Keystore-encrypted secure storage used for the TMDB token; values left by an
+ * older build are hashed on first load. If that bridge is missing, localStorage
+ * is used instead.
  *
  * Streambert is GPL-3.0. This file is part of a modified/ported build and is
  * therefore also GPL-3.0. Original project: https://github.com/truelockmc/streambert
@@ -33,6 +35,58 @@
     return !!(window.Android &&
       typeof window.Android.secureGet === "function" &&
       typeof window.Android.secureSet === "function");
+  }
+
+  function hashingAvailable() {
+    return !!(window.Android &&
+      typeof window.Android.hashSecret === "function" &&
+      typeof window.Android.verifySecret === "function");
+  }
+
+  // Turns a PIN or recovery code into a salted PBKDF2 record. When the native
+  // bridge is missing (desktop preview, tests) the value is kept as-is so the
+  // feature still works.
+  function sealSecret(secret) {
+    if (hashingAvailable()) {
+      try {
+        var record = window.Android.hashSecret(String(secret));
+        if (record) return String(record);
+      } catch (e) {}
+    }
+    return String(secret);
+  }
+
+  function secretMatches(candidate, stored) {
+    if (!stored) return false;
+    if (hashingAvailable()) {
+      try {
+        return window.Android.verifySecret(String(candidate), String(stored)) === true;
+      } catch (e) {}
+    }
+    return String(candidate) === String(stored);
+  }
+
+  // Replaces plaintext PIN/recovery values written by an older build with
+  // hashed records, so an existing install converges after one launch.
+  function migrateSecrets() {
+    if (!hashingAvailable() || typeof window.Android.isHashedSecret !== "function") return;
+    function legacy(value) {
+      try { return !!value && !window.Android.isHashedSecret(String(value)); } catch (e) { return false; }
+    }
+    if (legacy(state.pin)) {
+      var pinRecord = sealSecret(state.pin);
+      if (pinRecord && pinRecord !== state.pin) {
+        state.pin = pinRecord;
+        writeKey(PIN_KEY, PIN_LS, pinRecord);
+      }
+    }
+    if (legacy(state.recovery)) {
+      var recRecord = sealSecret(normalizeCode(state.recovery));
+      if (recRecord && recRecord !== state.recovery) {
+        state.recovery = recRecord;
+        writeKey(REC_KEY, REC_LS, recRecord);
+      }
+    }
   }
 
   function readKey(key, lsKey) {
@@ -76,6 +130,7 @@
     ]).then(function (values) {
       state.pin = values[0] || null;
       state.recovery = values[1] || null;
+      migrateSecrets();
       state.loaded = true;
       state.loading = null;
       updateBlock();
@@ -249,7 +304,7 @@
           ui.showError("Enter your 4-digit PIN.");
           return;
         }
-        if (value !== state.pin) {
+        if (!secretMatches(value, state.pin)) {
           input.value = "";
           ui.showError("Incorrect PIN. Try again.");
           focusLater(input);
@@ -304,14 +359,15 @@
 
       var pin = first.value;
       var rotate = mode !== "change" || !state.recovery;
-      state.pin = pin;
-      writeKey(PIN_KEY, PIN_LS, pin);
+      // Only the salted record is kept; the plaintext PIN stays in this scope.
+      state.pin = sealSecret(pin);
+      writeKey(PIN_KEY, PIN_LS, state.pin);
 
       var code = null;
       if (rotate) {
         code = generateCode();
-        state.recovery = code;
-        writeKey(REC_KEY, REC_LS, code);
+        state.recovery = sealSecret(normalizeCode(code));
+        writeKey(REC_KEY, REC_LS, state.recovery);
       }
       state.loaded = true;
       closeModal();
@@ -403,7 +459,7 @@
 
     function submit() {
       ui.clearError();
-      if (normalizeCode(input.value) !== normalizeCode(state.recovery)) {
+      if (!secretMatches(normalizeCode(input.value), state.recovery)) {
         input.value = "";
         ui.showError("That recovery code does not match.");
         focusLater(input);
@@ -425,31 +481,18 @@
     var ui = modal("Recovery code accepted",
       "What would you like to do?");
     var change = button("Change PIN", "btn btn-primary");
-    var view = button("View PIN", "btn btn-ghost");
     var close = element("button", "sb-pin-link", "Close");
     close.type = "button";
     ui.actions.appendChild(change);
-    ui.actions.appendChild(view);
     ui.body.appendChild(close);
+    ui.body.appendChild(element("div", "sb-pin-note",
+      "The PIN is stored as a one-way hash, so it can be reset here but no longer shown."));
 
     change.addEventListener("click", function () {
       closeModal();
       setupPin("recovery");
     });
-    view.addEventListener("click", function () {
-      closeModal();
-      showPin();
-    });
     close.addEventListener("click", closeModal);
-    track(ui.overlay, escapeKey());
-  }
-
-  function showPin() {
-    var ui = modal("Your PIN", "Keep this code private.");
-    ui.body.appendChild(element("div", "sb-pin-code", state.pin || "----"));
-    var done = button("Done", "btn btn-primary");
-    ui.actions.appendChild(done);
-    done.addEventListener("click", closeModal);
     track(ui.overlay, escapeKey());
   }
 

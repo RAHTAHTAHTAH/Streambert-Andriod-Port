@@ -49,10 +49,8 @@ import org.json.JSONObject;
 public class MainActivity extends Activity {
 
     static final String APP_HOST = "streambert.local";
-    private static final String PREFS = "streambert_secure";
 
     private WebView web;
-    private SharedPreferences securePrefs;
     private UpdateManager updater;
     private boolean autoCheckStarted = false;
     private long lastBackPress = 0L;
@@ -66,7 +64,6 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
 
         AdBlock.load(this);
-        securePrefs = getSharedPreferences(PREFS, MODE_PRIVATE);
         updater = new UpdateManager(this);
 
         Window window = getWindow();
@@ -850,20 +847,41 @@ public class MainActivity extends Activity {
             }
         }
 
+        /**
+         * Reads a stored secret (TMDB token, GitHub token, PIN record). The
+         * value is AES-GCM encrypted on disk; values written by older builds
+         * were plaintext and are re-encrypted transparently on first read.
+         */
         @JavascriptInterface
         public String secureGet(String key) {
             if (key == null) return null;
-            return securePrefs.getString("k_" + key, null);
+            String value = SecureStore.get(MainActivity.this, "k_" + key);
+            return value == null || value.isEmpty() ? null : value;
         }
 
         @JavascriptInterface
         public void secureSet(String key, String value) {
             if (key == null) return;
-            if (value == null || value.isEmpty()) {
-                securePrefs.edit().remove("k_" + key).apply();
-            } else {
-                securePrefs.edit().putString("k_" + key, value).apply();
-            }
+            SecureStore.set(MainActivity.this, "k_" + key, value);
+        }
+
+        /** Salted PBKDF2 record for a PIN or recovery code, never the secret. */
+        @JavascriptInterface
+        public String hashSecret(String secret) {
+            if (secret == null || secret.isEmpty()) return "";
+            return PinHash.create(secret);
+        }
+
+        /** Constant-time check of a candidate against a stored record. */
+        @JavascriptInterface
+        public boolean verifySecret(String candidate, String stored) {
+            return PinHash.verify(candidate, stored);
+        }
+
+        /** False when a value is still a plaintext secret from an old build. */
+        @JavascriptInterface
+        public boolean isHashedSecret(String stored) {
+            return PinHash.isHash(stored);
         }
 
         @JavascriptInterface

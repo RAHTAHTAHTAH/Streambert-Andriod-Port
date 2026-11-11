@@ -39,9 +39,16 @@ import java.util.Locale;
  * <p>Streambert Mobile is distributed as an APK, not through Play Store, so
  * Android does not update it. This class closes that gap: it reads a release
  * description from {@link #RELEASE_URL}, compares it with the installed
- * package, downloads a newer APK into the app cache, verifies package name,
- * version and signing certificate, and then hands the file to the system
+ * package, downloads a newer APK into the app cache over HTTPS, verifies the
+ * SHA-256 digest the release publishes, then verifies package name, version
+ * and signing certificate, and only then hands the file to the system
  * installer through {@link UpdateFileProvider}.</p>
+ *
+ * <p>The digest check is what makes the update path trustworthy: the signing
+ * certificate is compared against the installed app so Android accepts the
+ * upgrade, but the keystore ships with this project, so the certificate alone
+ * cannot prove the file is the one that was published. The published SHA-256
+ * can, because a file cannot be altered without changing its hash.</p>
  *
  * <p>Automatic checks run once per {@link #CHECK_INTERVAL_MS} when the app is
  * opened; a manual check from Settings uses the same path.</p>
@@ -72,6 +79,8 @@ public final class UpdateManager {
         String versionName = "";
         int versionCode = 0;
         long sizeBytes = 0L;
+        /** Published SHA-256 of the APK asset; empty when the source gives none. */
+        String sha256 = "";
         String apkUrl = "";
         String notes = "";
         String pageUrl = "";
@@ -209,6 +218,8 @@ public final class UpdateManager {
                 if (!name.toLowerCase(Locale.US).endsWith(".apk")) continue;
                 release.apkUrl = asset.optString("browser_download_url", "");
                 release.sizeBytes = asset.optLong("size", 0L);
+                // GitHub records "sha256:<hex>" for every uploaded asset.
+                release.sha256 = asset.optString("digest", "");
                 break;
             }
         } else {
@@ -217,12 +228,13 @@ public final class UpdateManager {
                     root.optString("version", "")));
             release.versionCode = root.optInt("versionCode", 0);
             release.apkUrl = root.optString("apkUrl", root.optString("url", ""));
+            release.sha256 = root.optString("sha256", root.optString("digest", ""));
             release.notes = root.optString("notes", root.optString("changelog", ""));
             release.pageUrl = root.optString("pageUrl", root.optString("htmlUrl", ""));
         }
 
         if (release.apkUrl.isEmpty()) return null;
-        if (!isHttpUrl(release.apkUrl)) return null;
+        if (!isHttpsUrl(release.apkUrl)) return null;
 
         PackageInfo local = installedPackage();
         if (local == null) return null;
@@ -233,9 +245,11 @@ public final class UpdateManager {
         return newer ? release : null;
     }
 
-    private static boolean isHttpUrl(String value) {
+    private static boolean isHttpsUrl(String value) {
         String lower = value.toLowerCase(Locale.US);
-        return lower.startsWith("https://") || lower.startsWith("http://");
+        // HTTPS only: an update must never arrive over a channel that can be
+        // silently rewritten in transit.
+        return lower.startsWith("https://");
     }
 
     private static String readBody(InputStream in, int limit) throws IOException {
@@ -402,7 +416,8 @@ public final class UpdateManager {
                         label.setText(humanSize(done) + " downloaded");
                     }
                 }));
-                failure = verifyApk(target);
+                failure = verifyIntegrity(release, target);
+                if (failure == null) failure = verifyApk(target);
                 if (failure == null) storePending(target);
             } catch (Exception e) {
                 failure = cancelled ? "Update cancelled." : ("The update could not be downloaded ("
@@ -479,6 +494,33 @@ public final class UpdateManager {
     }
 
     /**
+     * Cryptographic integrity check: the bytes written to disk must hash to the
+     * SHA-256 the release publishes. Runs before the package checks so a
+     * corrupted download, a truncated transfer or a swapped file is thrown away
+     * without ever reaching the installer.
+     */
+    private String verifyIntegrity(Release release, File apk) {
+        String expected = Digests.normalize(release.sha256);
+        if (expected.isEmpty()) {
+            return "This release does not publish a SHA-256 digest, so the update could "
+                    + "not be verified and was discarded.";
+        }
+        if (release.sizeBytes > 0L && apk.length() != release.sizeBytes) {
+            return "The update is incomplete (" + apk.length() + " of "
+                    + release.sizeBytes + " bytes), so it was discarded.";
+        }
+        try {
+            if (!Digests.matches(expected, apk)) {
+                return "The update failed its integrity check (SHA-256 mismatch), so it "
+                        + "was discarded.";
+            }
+        } catch (Exception e) {
+            return "The update's integrity could not be checked, so it was discarded.";
+        }
+        return null;
+    }
+
+    /**
      * Rejects anything that Android would refuse to install over this build:
      * wrong package, not newer, or signed with another key.
      */
@@ -497,7 +539,11 @@ public final class UpdateManager {
         }
         String localKey = signatureHash(installed);
         String remoteKey = signatureHash(archive);
-        if (localKey != null && remoteKey != null && !localKey.equals(remoteKey)) {
+        // Fail closed: an APK whose signer cannot be read is not installable.
+        if (localKey == null || remoteKey == null) {
+            return "The update's signing key could not be read, so it was discarded.";
+        }
+        if (!localKey.equals(remoteKey)) {
             return "The downloaded APK is signed with a different key, so Android "
                     + "will not install it over this build.";
         }

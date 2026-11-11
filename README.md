@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `1.0.2`, versionCode 23) that reuses the Streambert React
+(version `1.0.4`, versionCode 25) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -80,6 +80,17 @@ Automatic updates
 - Checks are throttled to once per 12 hours and failures stay silent unless you
   check manually. The release source is `UpdateManager.RELEASE_URL` (see
   "Publishing an update" below).
+- Downloads are verified cryptographically before anything is installed: the
+  APK must match the SHA-256 digest the release publishes (GitHub records one
+  for every uploaded asset), and the URL must be HTTPS. A file that does not
+  match is deleted instead of being offered to the installer, and a release
+  with no digest is refused rather than trusted.
+- The signer must also match the installed app, and that check now fails closed
+  if either key cannot be read.
+- Stored secrets are encrypted at rest with a non-exportable Android Keystore
+  key (AES-256-GCM): the TMDB token and the GitHub sync token. The parental PIN
+  and its recovery code are never stored at all, only salted PBKDF2 records.
+  Values written by older builds are migrated on first use.
 
 Performance on low-end devices
 - **Immutable asset caching** — hashed bundles under `assets/www/assets` are
@@ -197,6 +208,8 @@ that instead of starting a doomed install.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `1.0.4` (25) — secrets at rest: AES-256-GCM encryption of the TMDB and GitHub tokens with an Android Keystore key, parental PIN and recovery code stored as salted PBKDF2 hashes, transparent migration of old plaintext values
+- `1.0.3` (24) — cryptographic update integrity: SHA-256 digest verification of every download, HTTPS-only release URLs, fail-closed signing-key checks
 - `1.0.2` (23) — first build under the `1.0.x` numbering used by the GitHub releases; contains the built-in updater and the low-end performance work
 - `2.11.0-mobile` (22) — smoother on low-end devices: immutable asset caching, cheap rendering profile, memory-pressure handling
 - `2.10.0-mobile` (21) — built-in automatic APK updater (check, download, verify, install)
