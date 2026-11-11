@@ -10,8 +10,8 @@
           // expensive glass effects even once. See "Low-end profile" in
           // mobile.css; the native side decides what counts as low-end.
           try {
-            if (window.Android && window.Android.isLowEndDevice &&
-                window.Android.isLowEndDevice()) {
+            var __core = window.AndroidCore || window.Android || {};
+            if (__core.isLowEndDevice && __core.isLowEndDevice()) {
               document.documentElement.className += " sb-lite";
             }
           } catch (e) {}
