@@ -300,12 +300,18 @@
     },
     getBlockStats: function () { return Promise.resolve({ total: 0 }); },
 
-    // -- updater (APK updates are sideloaded) ----------------------------
-    detectUpdateFormat: function () { return Promise.resolve(null); },
+    // -- updater (native APK updater in MainActivity) --------------------
+    detectUpdateFormat: function () { return Promise.resolve("apk"); },
     downloadAndInstallUpdate: function () {
+      try {
+        if (bridge.checkForUpdates) {
+          bridge.checkForUpdates();
+          return Promise.resolve({ ok: true });
+        }
+      } catch (e) {}
       return Promise.resolve({
         ok: false,
-        error: "Install a newer APK to update Streambert Mobile.",
+        error: "The updater is not available in this build.",
       });
     },
     cancelUpdate: function () { return Promise.resolve(); },

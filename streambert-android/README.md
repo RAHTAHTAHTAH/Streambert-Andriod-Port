@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `2.9.1-mobile` (versionCode 20)
+- **Version:** `2.10.0-mobile` (versionCode 21)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -209,6 +209,31 @@ device-wide. Removing the GitHub token does not delete the Gist.
   "Already saved" instead of creating a duplicate.
 - "Open in browser" escape hatch for hosters that misbehave in the WebView.
 
+## Built-in updater
+
+The app updates itself — no more manual sideloading for every build.
+
+1. **Check.** On launch (throttled to once per 12 hours) and on demand from
+   Settings → App Version, `UpdateManager` reads `UpdateManager.RELEASE_URL`:
+   either a GitHub "latest release" object or the JSON manifest described in
+   the top-level README.
+2. **Confirm.** A native dialog shows the new version and the release notes;
+   "Update now" starts the download, "Later" keeps the APK for the Install
+   button in Settings.
+3. **Download and verify.** The APK lands in the app cache. Before installing,
+   the updater checks the package name, that `versionCode` is higher than the
+   installed one, and that the signing certificate matches — an APK signed with
+   another key is refused with an explanation instead of failing at the
+   installer.
+4. **Install.** The APK is handed to the system installer through
+   `UpdateFileProvider` (a temporary read grant; no AndroidX dependency). The
+   first time, Android asks you to allow "install unknown apps" for Streambert;
+   the app resumes the install when you come back.
+
+Settings → App Version has an "Automatic checks" toggle, a "Check for updates"
+button, and the current/last-checked state. `REQUEST_INSTALL_PACKAGES` is the
+only new permission; nothing is downloaded unless a check finds a newer build.
+
 ## Not available (desktop-only, graceful stubs)
 
 - The desktop downloader (`vid-dl-cli` + ffmpeg). The mobile player has its own
@@ -216,7 +241,6 @@ device-wide. Removing the GitHub token does not delete the Gist.
   replaced by the native one.
 - HiAnime / AllManga scraping — the app automatically falls back to another source.
 - Subtitle search and download (Wyzie).
-- In-app updater — install a newer APK to update.
 - Scheduled backups, Discord Rich Presence, PiP desktop window, tray/zoom/window controls.
 
 ---

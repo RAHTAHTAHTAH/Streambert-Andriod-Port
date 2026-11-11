@@ -52,6 +52,8 @@ public class MainActivity extends Activity {
 
     private WebView web;
     private SharedPreferences securePrefs;
+    private UpdateManager updater;
+    private boolean autoCheckStarted = false;
     private long lastBackPress = 0L;
     private BroadcastReceiver downloadReceiver;
     private ValueCallback<Uri[]> fileChooserCallback;
@@ -64,6 +66,7 @@ public class MainActivity extends Activity {
 
         AdBlock.load(this);
         securePrefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        updater = new UpdateManager(this);
 
         Window window = getWindow();
         window.setStatusBarColor(Color.rgb(20, 20, 20));
@@ -368,6 +371,15 @@ public class MainActivity extends Activity {
         super.onResume();
         if (web != null) web.onResume();
         notifyDownloadsChanged();
+        if (updater != null) {
+            // Finish an install that was waiting for the "install unknown
+            // apps" permission.
+            updater.resumePendingInstall();
+            if (!autoCheckStarted) {
+                autoCheckStarted = true;
+                updater.maybeAutoCheck();
+            }
+        }
     }
 
     @Override
@@ -448,6 +460,38 @@ public class MainActivity extends Activity {
             } catch (Exception e) {
                 return "2.7.3-mobile";
             }
+        }
+
+        // -- updater -----------------------------------------------------
+
+        /** Version, automatic-check preference and pending-install state. */
+        @JavascriptInterface
+        public String getUpdateState() {
+            return updater == null ? "{}" : updater.stateJson();
+        }
+
+        /** User-initiated check; progress and results use native dialogs. */
+        @JavascriptInterface
+        public void checkForUpdates() {
+            if (updater == null) return;
+            runOnUiThread(() -> updater.check(true));
+        }
+
+        @JavascriptInterface
+        public boolean isAutoUpdateCheck() {
+            return updater != null && updater.isAutoCheckEnabled();
+        }
+
+        @JavascriptInterface
+        public void setAutoUpdateCheck(final boolean enabled) {
+            if (updater == null) return;
+            updater.setAutoCheckEnabled(enabled);
+        }
+
+        @JavascriptInterface
+        public void installPendingUpdate() {
+            if (updater == null) return;
+            runOnUiThread(() -> updater.installPending());
         }
 
         @JavascriptInterface

@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `2.9.1-mobile`, versionCode 20) that reuses the Streambert React
+(version `2.10.0-mobile`, versionCode 21) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -69,6 +69,18 @@ Downloads
   (Action / Comedy / Sci-Fi for movies and series) using the same component as
   Trending; a compact chip strip below still opens the full genre browser
 
+Automatic updates
+- **Built-in APK updater** — the app checks the latest release on launch, shows
+  the new version and its changelog, downloads the APK, verifies that it is the
+  same package, is newer and is signed with the same key, then hands it to
+  Android's installer. No more hunting for a newer APK by hand.
+- **Update controls in Settings** — an "Automatic checks" toggle and a
+  "Check for updates" button in the App Version section, plus the state of a
+  downloaded update (with an Install button if you tapped "Later").
+- Checks are throttled to once per 12 hours and failures stay silent unless you
+  check manually. The release source is `UpdateManager.RELEASE_URL` (see
+  "Publishing an update" below).
+
 ---
 
 ## 2. Features added from user suggestions
@@ -85,7 +97,8 @@ Downloads
 
 Desktop-only features that have no Android equivalent (removed from the
 mobile Settings page):
-- Update checker, update source toggle and "check on startup" (updates are sideloaded APKs)
+- Desktop update checker / update source toggle and "check on startup" — the
+  mobile build has its own native APK updater (see "Automatic updates" above)
 - Discord Rich Presence
 - Scheduled backups (desktop file-system folder)
 - Install location / "open install folder"
@@ -138,12 +151,40 @@ Steps:
 
 The resulting APK is signed with the debug key and is ~0.5 MB.
 
+## Publishing an update
+
+The in-app updater reads `UpdateManager.RELEASE_URL`, which defaults to the
+latest GitHub release of this repository. For an update to be offered:
+
+- the release tag is the version name (`2.10.0-mobile` or `v2.10.0-mobile`),
+- the release has one `.apk` asset (the built `Streambert-Mobile.apk`),
+- the release body holds the changelog shown in the update dialog,
+- `versionCode` in `AndroidManifest.xml` is higher than the installed build
+  (the APK's own `versionCode` is verified before installing).
+
+A plain JSON manifest works too if the APK is hosted somewhere else:
+
+```json
+{
+  "versionName": "2.10.0-mobile",
+  "versionCode": 21,
+  "apkUrl": "https://example.com/Streambert-Mobile.apk",
+  "notes": "What changed in this build",
+  "pageUrl": "https://example.com/releases"
+}
+```
+
+Published APKs must be signed with the same key as the installed build —
+Android refuses an update signed with a different key and the updater reports
+that instead of starting a doomed install.
+
 ## Device tested
 - Samsung Galaxy A25 (SM-A256E), Android 16
 - WebView debugging enabled; CDP available on `localabstract:webview_devtools_remote_<pid>`
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.10.0-mobile` (21) — built-in automatic APK updater (check, download, verify, install)
 - `2.9.1-mobile` (20) — custom profile photos, uploaded from the device and synced
 - `2.9.0-mobile` (19) — optional cross-device sync through a private GitHub Gist
 - `2.8.0-mobile` (18) — Netflix-style profiles with per-profile watch data
