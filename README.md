@@ -11,6 +11,43 @@ emulated by `assets/www/mobile-shim.js`, which routes calls to the
 
 ---
 
+## Screenshots
+
+The same React renderer runs on Android, so the UI below is what ships in the
+APK (captured from the renderer in a desktop browser).
+
+### Home — browse by genre
+
+![Home screen](docs/screenshots/home.png)
+
+The home page keeps the hero banner, trending and continue-watching rows, and
+adds a **Browse by Genre** section: six poster carousels (Action, Comedy,
+Sci-Fi for movies and series) built from the same row component as Trending,
+with a compact genre-chip strip below for the full genre browser.
+
+### Profiles — who's watching
+
+![Profiles dialog](docs/screenshots/profiles.png)
+
+Netflix-style profiles: a "Who's watching?" picker once two or more profiles
+exist, up to five emoji or uploaded-photo avatars, and separate My List /
+Continue Watching / history / watched / search history for each profile.
+Profiles (with photos) and per-profile watch data can be merged across devices
+through a private GitHub Gist.
+
+### Settings
+
+![Settings page](docs/screenshots/settings.png)
+
+The full desktop settings surface, adapted for mobile: TMDB token and metadata
+language, age rating and parental controls with an optional 4-digit PIN,
+playback (trailer source, autoplay, anime intro skip, subtitles), appearance
+(theme, accent colour, compact grid, reduced animations), home-page layout and
+row visibility, library sort order, backups, downloads and storage. The App
+Version section also hosts the built-in updater controls.
+
+---
+
 ## 1. Original Streambert features (ported to Android)
 
 Core browsing & playback
@@ -114,7 +151,7 @@ Performance on low-end devices
 - **Search genre filter** — filter search results by genre.
 - **Next episode button** — quick jump to the next episode from the player/episode list.
 - **Mobile-friendly Settings** — desktop-only options removed/converted (see below).
-  
+
 ---
 
 ## 3. Features not adapted / not working on Android
@@ -156,7 +193,7 @@ Requirements:
 Steps:
 1. Edit the renderer in `streambert-mobile-build/` (or sync from `streambert-desktop/src`).
 2. Build the renderer:
-   ```
+   ```sh
    node streambert-desktop/node_modules/vite/bin/vite.js build --outDir dist
    ```
    (run from `streambert-mobile-build/`)
@@ -164,12 +201,12 @@ Steps:
    `assets/www/index.html` hashes.
 4. Bump `versionCode`/`versionName` in `AndroidManifest.xml` if needed.
 5. Build the APK:
-   ```
+   ```sh
    powershell -ExecutionPolicy Bypass -File .\build.ps1
    ```
    (run from `streambert-android/`)
 6. Install:
-   ```
+   ```sh
    adb install -r Streambert-Mobile.apk
    ```
 
