@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `2.10.0-mobile`, versionCode 21) that reuses the Streambert React
+(version `2.11.0-mobile`, versionCode 22) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -80,6 +80,19 @@ Automatic updates
 - Checks are throttled to once per 12 hours and failures stay silent unless you
   check manually. The release source is `UpdateManager.RELEASE_URL` (see
   "Publishing an update" below).
+
+Performance on low-end devices
+- **Immutable asset caching** — hashed bundles under `assets/www/assets` are
+  served with a one-year cache, so relaunching no longer re-reads and re-parses
+  all of the JavaScript. Hand-written files still revalidate each build.
+- **No debug WebView in release** — `setWebContentsDebuggingEnabled` is tied to
+  the debuggable flag instead of being forced on, which stops the inspector
+  agent from costing memory and CPU on every launch.
+- **Memory-pressure handling** — the WebView cache is released when Android
+  reports low memory instead of letting the renderer get killed and reload.
+- **Cheap rendering profile** — devices Android reports as low-RAM (or with
+  under 3 GB) drop the backdrop blurs on bars and overlays, plus shadows and
+  transitions, before the first paint. Layout and colours are unchanged.
 
 ---
 
@@ -184,6 +197,7 @@ that instead of starting a doomed install.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `2.11.0-mobile` (22) — smoother on low-end devices: immutable asset caching, cheap rendering profile, memory-pressure handling
 - `2.10.0-mobile` (21) — built-in automatic APK updater (check, download, verify, install)
 - `2.9.1-mobile` (20) — custom profile photos, uploaded from the device and synced
 - `2.9.0-mobile` (19) — optional cross-device sync through a private GitHub Gist

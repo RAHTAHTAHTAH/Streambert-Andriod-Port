@@ -7,6 +7,7 @@ import android.app.AlertDialog;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
+import android.content.pm.ApplicationInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -215,7 +216,10 @@ public class MainActivity extends Activity {
 
         registerDownloadReceiver();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(true);
+            // Debugging was left on for every build, which keeps the inspector
+            // agent attached in release and costs memory/CPU on weak devices.
+            WebView.setWebContentsDebuggingEnabled(
+                    (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0);
         }
 
         if (savedInstanceState != null && web.restoreState(savedInstanceState) != null) {
@@ -312,7 +316,14 @@ public class MainActivity extends Activity {
             String encoding = isText(mime) ? "utf-8" : null;
             WebResourceResponse response = new WebResourceResponse(mime, encoding, stream);
             Map<String, String> headers = new HashMap<>();
-            headers.put("Cache-Control", "no-cache");
+            // Everything under /assets is content-hashed by the build, so it can
+            // never go stale. Letting the WebView keep it removes a full asset
+            // re-read (and a JS re-parse) from every launch, which is the most
+            // noticeable cost on a slow device. The hand-written files keep
+            // revalidating because their names don't change between builds.
+            boolean hashed = path.startsWith("/assets/");
+            headers.put("Cache-Control",
+                    hashed ? "public, max-age=31536000, immutable" : "no-cache");
             response.setResponseHeaders(headers);
             return response;
         } catch (IOException e) {
@@ -364,6 +375,21 @@ public class MainActivity extends Activity {
     protected void onPause() {
         super.onPause();
         if (web != null) web.onPause();
+    }
+
+    @Override
+    public void onTrimMemory(int level) {
+        super.onTrimMemory(level);
+        // Low-RAM devices report pressure constantly. Dropping the renderer's
+        // cache here is much cheaper than having Android kill the WebView
+        // process (and reload the whole app) while the user is browsing.
+        if (web != null && level >= TRIM_MEMORY_RUNNING_LOW) web.freeMemory();
+    }
+
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        if (web != null) web.freeMemory();
     }
 
     @Override
@@ -475,6 +501,12 @@ public class MainActivity extends Activity {
         public void checkForUpdates() {
             if (updater == null) return;
             runOnUiThread(() -> updater.check(true));
+        }
+
+        /** True on devices where the glass/transition effects should be cut. */
+        @JavascriptInterface
+        public boolean isLowEndDevice() {
+            return DeviceProfile.isLowEnd(MainActivity.this);
         }
 
         @JavascriptInterface

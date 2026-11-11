@@ -311,7 +311,10 @@ public class PlayerActivity extends Activity {
         });
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            WebView.setWebContentsDebuggingEnabled(true);
+            // Keeping the inspector attached in release wastes memory while a
+            // video page is decoding; only enable it for debuggable builds.
+            WebView.setWebContentsDebuggingEnabled(
+                    (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0);
         }
 
         hideSystemUi();

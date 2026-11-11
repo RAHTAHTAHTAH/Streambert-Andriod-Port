@@ -9,7 +9,7 @@ and hands video playback off to a full-screen native player.
 > Browsing and playback work; some desktop-only features are stubbed out.
 
 - **Package:** `com.streambert.mobile`
-- **Version:** `2.10.0-mobile` (versionCode 21)
+- **Version:** `2.11.0-mobile` (versionCode 22)
 - **Min SDK:** 23 (Android 6.0) · **Target SDK:** 34 (Android 14)
 - **APK:** `Streambert-Mobile.apk`
 
@@ -233,6 +233,30 @@ The app updates itself — no more manual sideloading for every build.
 Settings → App Version has an "Automatic checks" toggle, a "Check for updates"
 button, and the current/last-checked state. `REQUEST_INSTALL_PACKAGES` is the
 only new permission; nothing is downloaded unless a check finds a newer build.
+
+## Performance on low-end devices
+
+The app is a WebView shell, so the cheap wins are mostly about not making the
+renderer do work twice.
+
+- **Asset caching.** Files under `assets/www/assets` carry a content hash in
+their name, so `serveAsset` answers them with `Cache-Control: max-age=31536000,
+immutable`. A relaunch starts from the WebView cache instead of re-reading and
+re-parsing every bundle; `index.html`, `mobile.css` and the `mobile-*.js`
+files keep `no-cache` because their names don't change between builds.
+- **No debug inspector in release.** `WebView.setWebContentsDebuggingEnabled`
+now follows `ApplicationInfo.FLAG_DEBUGGABLE` rather than being forced on, so
+the shipped APK doesn't keep a debugging agent attached.
+- **Memory pressure.** `onTrimMemory`/`onLowMemory` release the WebView's cache
+when Android reports pressure, which keeps the app from being killed and
+reloaded mid-browse on 2 GB devices.
+- **Cheap rendering profile.** `DeviceProfile.isLowEnd()` is true when Android
+reports the device as low-RAM or it has under 3 GB of memory (a single probe,
+cached for the process). `index.html` asks for it before the first paint and
+adds `html.sb-lite`, which removes the 16 px backdrop blurs from the bottom bar
+and tab strip, the blur on overlays and carousel badges, and the card shadows
+and transitions. Bars get a solid fill so they don't look muddy without the
+blur. Nothing about the layout changes.
 
 ## Not available (desktop-only, graceful stubs)
 

@@ -5,6 +5,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
         <meta name="theme-color" content="#141414" />
         <title>Streambert</title>
+        <script>
+          // Runs before the first paint, so a weak device never draws the
+          // expensive glass effects even once. See "Low-end profile" in
+          // mobile.css; the native side decides what counts as low-end.
+          try {
+            if (window.Android && window.Android.isLowEndDevice &&
+                window.Android.isLowEndDevice()) {
+              document.documentElement.className += " sb-lite";
+            }
+          } catch (e) {}
+        </script>
         <link rel="icon" type="image/svg+xml" href="./logo.svg" />
       <link rel="stylesheet" crossorigin href="./assets/index-DxCunSpl.css">
       <link rel="stylesheet" href="./mobile.css" />

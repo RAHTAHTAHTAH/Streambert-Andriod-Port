@@ -2421,3 +2421,54 @@ body {
     line-height: 1;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Low-end profile (html.sb-lite)
+   -------------------------------------------------------------------------
+   On devices Android reports as low-RAM, index.html adds .sb-lite before the
+   first paint. The backdrop blurs are by far the most expensive thing the UI
+   asks a weak GPU to do (the bars sit over a scrolling page), so they go
+   first; shadows and transitions follow. Colours and layout stay identical. */
+html.sb-lite .sidebar,
+html.sb-lite .sb-home-tabs,
+html.sb-lite .sb-pin-overlay,
+html.sb-lite .modal-overlay,
+html.sb-lite .modal-backdrop,
+html.sb-lite .trailer-overlay,
+html.sb-lite .cast-overlay,
+html.sb-lite .close-confirm-overlay,
+html.sb-lite .carousel-unreleased-overlay,
+html.sb-lite .carousel-score,
+html.sb-lite .carousel-anime-badge,
+html.sb-lite .carousel-rating-badge,
+html.sb-lite .carousel-btn,
+html.sb-lite .player-overlay-btn {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Without the blur, a translucent bar would look muddy over the page, so the
+   bars keep their own solid fill instead. */
+html.sb-lite .sidebar {
+  background: var(--surface) !important;
+}
+
+html.sb-lite .sb-home-tabs {
+  background: var(--bg) !important;
+}
+
+html.sb-lite .card,
+html.sb-lite .episode-card,
+html.sb-lite .carousel-btn,
+html.sb-lite .player-overlay-btn,
+html.sb-lite .sb-updates,
+html.sb-lite .btn {
+  box-shadow: none !important;
+}
+
+html.sb-lite .card,
+html.sb-lite .episode-card,
+html.sb-lite .carousel-btn,
+html.sb-lite .btn {
+  transition: none !important;
+}
