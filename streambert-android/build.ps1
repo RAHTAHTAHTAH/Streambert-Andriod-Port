@@ -120,15 +120,12 @@ try {
 if ($LASTEXITCODE -ne 0) { throw "zipalign failed" }
 
 Write-Host "[6/7] Signing..."
-$ks = Join-Path $root "streambert-debug.keystore"
+$ks = Join-Path $root "streambert-release.keystore"
 if (!(Test-Path $ks)) {
-  & "$jdk\bin\keytool.exe" -genkeypair -v `
-    -keystore "$ks" -storepass android -alias androiddebugkey -keypass android `
-    -keyalg RSA -keysize 2048 -validity 10000 `
-    -dname "CN=Streambert Mobile Debug,O=Streambert,C=US"
-  if ($LASTEXITCODE -ne 0) { throw "keytool failed" }
+  throw "Release keystore not found at $ks. Generate one with: keytool -genkeypair -keystore streambert-release.keystore -alias streambert -keyalg RSA -keysize 2048 -validity 10000"
 }
-& "$bt\apksigner.bat" sign --ks "$ks" --ks-pass pass:android --key-pass pass:android `
+& "$bt\apksigner.bat" sign --ks "$ks" --ks-pass pass:streambert-release --key-pass pass:streambert-release `
+  --ks-key-alias streambert `
   --out "$root\Streambert-Mobile.apk" "$build\aligned.apk"
 if ($LASTEXITCODE -ne 0) { throw "apksigner failed" }
 

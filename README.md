@@ -226,7 +226,7 @@ Steps:
    adb install -r Streambert-Mobile.apk
    ```
 
-The resulting APK is signed with the debug key and is ~0.5 MB.
+The resulting APK is signed with the committed release keystore and is ~0.5 MB.
 
 ## Publishing an update
 

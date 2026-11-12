@@ -364,9 +364,10 @@ cd streambert-android
 ANDROID_HOME=~/Android/Sdk JAVA_HOME=/path/to/jdk-21 ./build.sh
 ```
 
-Output: `Streambert-Mobile.apk`, signed with the debug keystore
-`streambert-debug.keystore` (password `android`). Replace it with your own
-release key before distributing.
+Output: `Streambert-Mobile.apk`, signed with the release keystore
+`streambert-release.keystore` (alias `streambert`, password `streambert-release`).
+The keystore is committed to the repository so all builds share the same
+signing certificate, which the in-app updater requires for upgrades.
 
 ### Project layout
 
@@ -421,7 +422,9 @@ streambert-android/
 - WebView remote debugging is enabled (this is a debug-style sideload build).
   Disable `WebView.setWebContentsDebuggingEnabled(true)` in `MainActivity.java`
   for a production release.
-- The debug signing key is public. Re-sign with your own key for real distribution.
+- The release signing key is committed to the repository (password `streambert-release`).
+  For real distribution, generate your own keystore and update `build.sh` /
+  `build.ps1` accordingly.
 
 ---
 

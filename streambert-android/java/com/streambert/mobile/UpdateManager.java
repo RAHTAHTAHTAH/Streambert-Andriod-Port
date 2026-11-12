@@ -46,8 +46,8 @@ import java.util.Locale;
  *
  * <p>The digest check is what makes the update path trustworthy: the signing
  * certificate is compared against the installed app so Android accepts the
- * upgrade, but the keystore ships with this project, so the certificate alone
- * cannot prove the file is the one that was published. The published SHA-256
+ * upgrade, but the release keystore ships with this project, so the certificate
+ * alone cannot prove the file is the one that was published. The published SHA-256
  * can, because a file cannot be altered without changing its hash.</p>
  *
  * <p>Automatic checks run once per {@link #CHECK_INTERVAL_MS} when the app is
