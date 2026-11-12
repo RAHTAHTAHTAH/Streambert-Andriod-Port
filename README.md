@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `1.0.3`, versionCode 27) that reuses the Streambert React
+(version `1.0.4`, versionCode 28) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -67,8 +67,6 @@ Core browsing & playback
 - Library: watchlist, history, continue watching
 - Streaming from multiple providers (Videasy, Vidking, VidSrc, etc.) with in-app source switching
 - Full-screen native player (tap to reveal controls, auto-hide after 3.5 s)
-- Picture-in-Picture mode (Android 8.0+): tap the PiP button in the player bar,
-  or press Home while playing to keep the video in a floating window
 - Ad blocking in the player WebView
 - Watched threshold / auto-mark watched
 - Autoplay next episode with countdown and overlay position

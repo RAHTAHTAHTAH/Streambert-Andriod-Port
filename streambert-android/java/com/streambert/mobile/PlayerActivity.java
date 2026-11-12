@@ -922,7 +922,7 @@ public class PlayerActivity extends Activity {
         return name;
     }
 
-    /** Enter Picture-in-Picture mode (Android 8.0+). */
+    /** Open the current stream in the system browser. */
     private void openInBrowser() {
         String url = lastMediaUrl != null ? lastMediaUrl : pageUrl;
         try {
