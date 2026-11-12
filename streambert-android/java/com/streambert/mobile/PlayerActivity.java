@@ -291,30 +291,39 @@ public class PlayerActivity extends Activity {
         web.setWebChromeClient(chrome = new WebChromeClient() {
             @Override
             public void onShowCustomView(View view, CustomViewCallback callback) {
-                if (customView != null) {
-                    callback.onCustomViewHidden();
-                    return;
+                try {
+                    if (customView != null) {
+                        callback.onCustomViewHidden();
+                        return;
+                    }
+                    customView = view;
+                    customViewCallback = callback;
+                    root.addView(view, new FrameLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT));
+                    setTopBarVisible(false);
+                    hideSystemUi();
+                } catch (Exception e) {
+                    Log.w(TAG, "onShowCustomView failed", e);
+                    if (callback != null) callback.onCustomViewHidden();
                 }
-                customView = view;
-                customViewCallback = callback;
-                root.addView(view, new FrameLayout.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT));
-                setTopBarVisible(false);
-                hideSystemUi();
             }
 
             @Override
             public void onHideCustomView() {
-                if (customView == null) return;
-                root.removeView(customView);
-                customView = null;
-                if (customViewCallback != null) {
-                    customViewCallback.onCustomViewHidden();
-                    customViewCallback = null;
+                try {
+                    if (customView == null) return;
+                    root.removeView(customView);
+                    customView = null;
+                    if (customViewCallback != null) {
+                        customViewCallback.onCustomViewHidden();
+                        customViewCallback = null;
+                    }
+                    setTopBarVisible(false);
+                    hideSystemUi();
+                } catch (Exception e) {
+                    Log.w(TAG, "onHideCustomView failed", e);
                 }
-                setTopBarVisible(false);
-                hideSystemUi();
             }
 
             @Override
@@ -354,7 +363,15 @@ public class PlayerActivity extends Activity {
         pipFilter.addAction(ACTION_PIP_CLOSE);
         pipFilter.addAction(ACTION_PIP_PLAY);
         pipFilter.addAction(ACTION_PIP_PAUSE);
-        registerReceiver(pipReceiver, pipFilter);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(pipReceiver, pipFilter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(pipReceiver, pipFilter);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Could not register PiP receiver", e);
+        }
 
         hideSystemUi();
 
@@ -526,6 +543,7 @@ public class PlayerActivity extends Activity {
 
     private void captureMedia(String url) {
         if (url == null) return;
+        try {
         String lower = url.toLowerCase(Locale.US);
         boolean isHls = lower.contains(".m3u8");
         boolean isVideo = lower.matches(".*\\.(mp4|m4v|webm|mkv)(\\?.*)?$");
@@ -561,6 +579,9 @@ public class PlayerActivity extends Activity {
         runOnUiThread(() -> {
             if (downloadBtn != null) downloadBtn.setVisibility(View.VISIBLE);
         });
+        } catch (Exception e) {
+            Log.w(TAG, "captureMedia failed", e);
+        }
     }
 
     // ------------------------------------------------------------------

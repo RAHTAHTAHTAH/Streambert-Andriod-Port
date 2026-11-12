@@ -137,7 +137,15 @@ public class VideoPlayerActivity extends Activity {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_PIP_PLAY);
         filter.addAction(ACTION_PIP_PAUSE);
-        registerReceiver(pipReceiver, filter);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                registerReceiver(pipReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                registerReceiver(pipReceiver, filter);
+            }
+        } catch (Exception e) {
+            Log.w("StreambertPlayer", "Could not register PiP receiver", e);
+        }
 
         if (title != null && !title.isEmpty()) {
             setTitle(title);
