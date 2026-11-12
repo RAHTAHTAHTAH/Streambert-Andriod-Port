@@ -120,11 +120,10 @@ public class BridgeAnime {
             JSONObject srvObj = new JSONObject(srvJson);
             String srvHtml = srvObj.optString("html", "");
 
-            // Find first server data-id
-            Pattern srvPat = Pattern.compile("data-id=\"(\\d+)\"");
-            Matcher sm = srvPat.matcher(srvHtml);
-            if (!sm.find()) return fail("No servers");
-            String serverDataId = sm.group(1);
+            // Find server data-id matching the requested translation type (sub/dub).
+            // The servers HTML is split into sections (e.g. servers-sub / servers-dub).
+            String serverDataId = findServerDataId(srvHtml, translationType);
+            if (serverDataId == null) return fail("No " + translationType + " servers");
 
             // Step 4: sources
             String srcUrl = BASE + "/ajax/v2/episode/sources?id=" + serverDataId;
@@ -180,6 +179,59 @@ public class BridgeAnime {
         } catch (Exception e) {
             return "{\"ok\":false,\"error\":\"" + msg + "\"}";
         }
+    }
+
+    /**
+     * Find the first server data-id belonging to the requested category (sub or dub).
+     * The servers HTML is split into sub/dub sections; we try to locate the matching
+     * section and extract the first data-id from it. Falls back to scanning for a
+     * data-type attribute matching the category, then to the first data-id overall.
+     */
+    private String findServerDataId(String html, String category) {
+        if (html == null || html.isEmpty()) return null;
+        String cat = (category == null) ? "sub" : category.toLowerCase();
+        String other = cat.equals("dub") ? "sub" : "dub";
+
+        // Strategy 1: find the category header position, then extract the first
+        // data-id in the region between that header and the other category's header.
+        int catIdx = indexOfIgnoreCase(html, cat);
+        int otherIdx = indexOfIgnoreCase(html, other);
+        String searchRegion = html;
+        if (catIdx >= 0) {
+            int start = catIdx;
+            int end = html.length();
+            if (otherIdx > catIdx) end = otherIdx;
+            else if (otherIdx >= 0 && otherIdx < catIdx) {
+                // other first: search whole string
+                start = 0;
+                end = html.length();
+            }
+            searchRegion = html.substring(start, end);
+        }
+        Matcher dm = Pattern.compile("data-id=\"(\\d+)\"").matcher(searchRegion);
+        if (dm.find()) return dm.group(1);
+
+        // Strategy 2: find elements with data-type matching the category.
+        // (case-insensitive search)
+        String lower = html.toLowerCase();
+        String needle = "data-type=\"" + cat + "\"";
+        int idx = lower.indexOf(needle);
+        if (idx >= 0) {
+            int searchStart = Math.max(0, idx - 50);
+            int searchEnd = Math.min(html.length(), idx + 200);
+            Matcher tm = Pattern.compile("data-id=\"(\\d+)\"").matcher(html.substring(searchStart, searchEnd));
+            if (tm.find()) return tm.group(1);
+        }
+
+        // Strategy 3: fallback to first data-id (original behavior).
+        Matcher fm = Pattern.compile("data-id=\"(\\d+)\"").matcher(html);
+        if (fm.find()) return fm.group(1);
+        return null;
+    }
+
+    private static int indexOfIgnoreCase(String s, String sub) {
+        if (s == null || sub == null) return -1;
+        return s.toLowerCase().indexOf(sub.toLowerCase());
     }
 
     private String httpGet(String urlStr, String requestedWith) {

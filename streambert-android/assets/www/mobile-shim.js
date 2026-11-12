@@ -264,6 +264,65 @@
       });
     },
 
+    // -- trakt scrobbling (native) ---------------------------------------
+    traktSetCredentials: function (clientId, clientSecret) {
+      try { if (bridge.traktSetCredentials) bridge.traktSetCredentials(String(clientId||""), String(clientSecret||"")); } catch (e) {}
+      return Promise.resolve();
+    },
+    traktGetCredentials: function () {
+      try { if (bridge.traktGetCredentials) return Promise.resolve(JSON.parse(bridge.traktGetCredentials())); } catch (e) {}
+      return Promise.resolve({ ok: false });
+    },
+    traktHasCredentials: function () {
+      try { if (bridge.traktHasCredentials) return Promise.resolve(!!bridge.traktHasCredentials()); } catch (e) {}
+      return Promise.resolve(false);
+    },
+    traktIsAuthorized: function () {
+      try { if (bridge.traktIsAuthorized) return Promise.resolve(!!bridge.traktIsAuthorized()); } catch (e) {}
+      return Promise.resolve(false);
+    },
+    traktRequestDeviceCode: function () {
+      try { if (bridge.traktRequestDeviceCode) return Promise.resolve(JSON.parse(bridge.traktRequestDeviceCode())); } catch (e) {}
+      return Promise.resolve({ ok: false });
+    },
+    traktGetUserCode: function () {
+      try { if (bridge.traktGetUserCode) return Promise.resolve(bridge.traktGetUserCode()); } catch (e) {}
+      return Promise.resolve("");
+    },
+    traktGetVerificationUrl: function () {
+      try { if (bridge.traktGetVerificationUrl) return Promise.resolve(bridge.traktGetVerificationUrl()); } catch (e) {}
+      return Promise.resolve("https://trakt.tv/activate");
+    },
+    traktPollAuthorization: function () {
+      try { if (bridge.traktPollAuthorization) return Promise.resolve(JSON.parse(bridge.traktPollAuthorization())); } catch (e) {}
+      return Promise.resolve({ ok: false });
+    },
+    traktDisconnect: function () {
+      try { if (bridge.traktDisconnect) bridge.traktDisconnect(); } catch (e) {}
+      return Promise.resolve();
+    },
+    traktScrobble: function (action, type, title, year, showTitle, season, episode, progress) {
+      try {
+        if (bridge.traktScrobble) {
+          var r = bridge.traktScrobble(String(action||""), String(type||""), String(title||""),
+            Number(year)||0, String(showTitle||""), Number(season)||0, Number(episode)||0,
+            Number(progress)||0);
+          return Promise.resolve(JSON.parse(r));
+        }
+      } catch (e) {}
+      return Promise.resolve({ ok: false });
+    },
+    traktAddToHistory: function (type, title, year, showTitle, season, episode) {
+      try {
+        if (bridge.traktAddToHistory) {
+          var r = bridge.traktAddToHistory(String(type||""), String(title||""), Number(year)||0,
+            String(showTitle||""), Number(season)||0, Number(episode)||0);
+          return Promise.resolve(JSON.parse(r));
+        }
+      } catch (e) {}
+      return Promise.resolve({ ok: false });
+    },
+
     // -- anime resolver (native HiAnime scraper via OkHttp/HttpURLConnection) --
     resolveHiAnime: function (params) {
       try {

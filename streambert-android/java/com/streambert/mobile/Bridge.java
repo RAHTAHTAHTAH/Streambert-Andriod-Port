@@ -22,6 +22,7 @@ public class Bridge {
     private final BridgeSubtitles subtitles;
     private final BridgeProviders providers;
     private final BridgeAnime anime;
+    private final BridgeTrakt trakt;
 
     public Bridge(MainActivity activity) {
         this.activity = activity;
@@ -33,6 +34,7 @@ public class Bridge {
         this.subtitles = new BridgeSubtitles(activity);
         this.providers = new BridgeProviders(activity);
         this.anime = new BridgeAnime(activity);
+        this.trakt = new BridgeTrakt(activity);
     }
 
     // -- core -------------------------------------------------------------
@@ -138,4 +140,34 @@ public class Bridge {
     // -- anime (HiAnime resolver) ---------------------------------------
     @android.webkit.JavascriptInterface
     public String resolveHiAnime(String paramsJson) { return anime.resolveHiAnime(paramsJson); }
+
+    // -- trakt -----------------------------------------------------------
+    @android.webkit.JavascriptInterface
+    public void traktSetCredentials(String clientId, String clientSecret) { trakt.setCredentials(clientId, clientSecret); }
+    @android.webkit.JavascriptInterface
+    public String traktGetCredentials() { return trakt.getCredentials(); }
+    @android.webkit.JavascriptInterface
+    public boolean traktHasCredentials() { return trakt.hasCredentials(); }
+    @android.webkit.JavascriptInterface
+    public boolean traktIsAuthorized() { return trakt.isAuthorized(); }
+    @android.webkit.JavascriptInterface
+    public String traktRequestDeviceCode() { return trakt.requestDeviceCode(); }
+    @android.webkit.JavascriptInterface
+    public String traktGetUserCode() { return trakt.getUserCode(); }
+    @android.webkit.JavascriptInterface
+    public String traktGetVerificationUrl() { return trakt.getVerificationUrl(); }
+    @android.webkit.JavascriptInterface
+    public String traktPollAuthorization() { return trakt.pollAuthorization(); }
+    @android.webkit.JavascriptInterface
+    public void traktDisconnect() { trakt.disconnect(); }
+    @android.webkit.JavascriptInterface
+    public String traktScrobble(String action, String type, String title, int year,
+            String showTitle, int season, int episode, double progress) {
+        return trakt.scrobble(action, type, title, year, showTitle, season, episode, progress);
+    }
+    @android.webkit.JavascriptInterface
+    public String traktAddToHistory(String type, String title, int year,
+            String showTitle, int season, int episode) {
+        return trakt.addToHistory(type, title, year, showTitle, season, episode);
+    }
 }
