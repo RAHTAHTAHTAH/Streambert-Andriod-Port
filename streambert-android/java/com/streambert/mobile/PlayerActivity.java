@@ -979,9 +979,15 @@ public class PlayerActivity extends Activity {
             // Make the hoster's video fill the WebView before entering PiP.
             if (web != null) {
                 web.evaluateJavascript(
-                        "(function(){try{var s=document.createElement('style');" +
-                        "s.id='pip-style';s.textContent='video{width:100%!important;height:100%!important;object-fit:contain!important;position:fixed!important;top:0!important;left:0!important;}';" +
-                        "if(!document.getElementById('pip-style'))document.head.appendChild(s);}catch(e){}})();",
+                        "(function(){try{" +
+                        "var s=document.getElementById('pip-style');" +
+                        "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
+                        "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
+                        "'video{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;}' +" +
+                        "'*:not(video):not(html):not(body){display:none!important;}';" +
+                        "var v=document.querySelector('video');" +
+                        "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                        "}catch(e){}})();",
                         null);
             }
             updatePipParams();
@@ -1133,9 +1139,15 @@ public class PlayerActivity extends Activity {
             try {
                 if (web != null) {
                     web.evaluateJavascript(
-                            "(function(){try{var s=document.createElement('style');" +
-                            "s.id='pip-style';s.textContent='video{width:100%!important;height:100%!important;object-fit:contain!important;position:fixed!important;top:0!important;left:0!important;}';" +
-                            "if(!document.getElementById('pip-style'))document.head.appendChild(s);}catch(e){}})();",
+                            "(function(){try{" +
+                            "var s=document.getElementById('pip-style');" +
+                            "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
+                            "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
+                            "'video{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;}' +" +
+                            "'*:not(video):not(html):not(body){display:none!important;}';" +
+                            "var v=document.querySelector('video');" +
+                            "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                            "}catch(e){}})();",
                             null);
                 }
                 updatePipParams();
@@ -1159,9 +1171,15 @@ public class PlayerActivity extends Activity {
                 web.requestLayout();
                 // Make the hoster's video fill the WebView in PiP.
                 web.evaluateJavascript(
-                        "(function(){try{var s=document.createElement('style');" +
-                        "s.id='pip-style';s.textContent='video{width:100%!important;height:100%!important;object-fit:contain!important;}';" +
-                        "if(!document.getElementById('pip-style'))document.head.appendChild(s);}catch(e){}})();",
+                        "(function(){try{" +
+                        "var s=document.getElementById('pip-style');" +
+                        "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
+                        "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
+                        "'video{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;}' +" +
+                        "'*:not(video):not(html):not(body){display:none!important;}';" +
+                        "var v=document.querySelector('video');" +
+                        "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                        "}catch(e){}})();",
                         null);
             }
             hideSystemUi();
