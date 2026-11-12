@@ -987,6 +987,9 @@ public class PlayerActivity extends Activity {
                         "'*:not(video):not(html):not(body){display:none!important;}';" +
                         "var v=document.querySelector('video');" +
                         "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                        "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
+                        "var v2=document.querySelector('video');if(v2&&v2.parentElement!==document.body)document.body.appendChild(v2);" +
+                        "});window.__pipObs.observe(document.body,{childList:true,subtree:true});}" +
                         "}catch(e){}})();",
                         null);
             }
@@ -1147,6 +1150,9 @@ public class PlayerActivity extends Activity {
                             "'*:not(video):not(html):not(body){display:none!important;}';" +
                             "var v=document.querySelector('video');" +
                             "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                            "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
+                            "var v2=document.querySelector('video');if(v2&&v2.parentElement!==document.body)document.body.appendChild(v2);" +
+                            "});window.__pipObs.observe(document.body,{childList:true,subtree:true});}" +
                             "}catch(e){}})();",
                             null);
                 }
@@ -1179,6 +1185,9 @@ public class PlayerActivity extends Activity {
                         "'*:not(video):not(html):not(body){display:none!important;}';" +
                         "var v=document.querySelector('video');" +
                         "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                        "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
+                        "var v2=document.querySelector('video');if(v2&&v2.parentElement!==document.body)document.body.appendChild(v2);" +
+                        "});window.__pipObs.observe(document.body,{childList:true,subtree:true});}" +
                         "}catch(e){}})();",
                         null);
             }
