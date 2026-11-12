@@ -1161,35 +1161,65 @@ public class PlayerActivity extends Activity {
                 web.requestLayout();
                 web.invalidate();
                 // Make the hoster's video fill the WebView in PiP.
-                // Try multiple times with increasing delays.
-                final Runnable applyCss = new Runnable() {
-                    int attempts = 0;
-                    @Override
-                    public void run() {
-                        if (web == null || !isInPictureInPictureMode()) return;
-                        web.evaluateJavascript(
-                                "(function(){try{" +
-                                "var s=document.getElementById('pip-style');" +
-                                "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
-                                "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
-                                "'video,iframe{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;}' +" +
-                                "}';" +
-                                "var vs=document.querySelectorAll('video,iframe');" +
-                                "for(var i=0;i<vs.length;i++){vs[i].setAttribute('style','position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;');}" +
-                                "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
-                                "var v2=document.querySelector('video');if(v2)v2.setAttribute('style','position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;');" +
-                                "var f2=document.querySelector('iframe');if(f2)f2.setAttribute('style','position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;');" +
-                                "});window.__pipObs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});}" +
-                                "}catch(e){console.log('PiP CSS error: '+e);}" +
-                                "})()",
-                                null);
-                        attempts++;
-                        if (attempts < 5) {
-                            web.postDelayed(this, 200);
-                        }
-                    }
-                };
-                applyCss.run();
+                // First, try to find the iframe/video src and navigate to it.
+                web.evaluateJavascript(
+                        "(function(){try{" +
+                        "var f=document.querySelector('iframe');" +
+                        "if(f&&f.src&&f.src.indexOf('http')===0){return f.src;}" +
+                        "var v=document.querySelector('video');" +
+                        "if(v&&v.src&&v.src.indexOf('http')===0){return v.src;}" +
+                        "if(v&&v.currentSrc&&v.currentSrc.indexOf('http')===0){return v.currentSrc;}" +
+                        "return 'none';" +
+                        "}catch(e){return 'error:'+e;}" +
+                        "})()",
+                        new android.webkit.ValueCallback<String>() {
+                            @Override
+                            public void onReceiveValue(String value) {
+                                Log.d(TAG, "PiP found src: " + value);
+                                if (value != null && value.startsWith("\"") && value.endsWith("\"")) {
+                                    value = value.substring(1, value.length() - 1);
+                                }
+                                if (value != null && value.startsWith("http") &&
+                                        (value.contains("embed") || value.contains("player") ||
+                                         value.contains("vidrift") || value.contains(".m3u8") ||
+                                         value.contains(".mp4"))) {
+                                    Log.d(TAG, "PiP navigating WebView to: " + value);
+                                    Map<String, String> headers = new HashMap<>();
+                                    headers.put("Referer", referer);
+                                    web.loadUrl(value, headers);
+                                } else {
+                                    // Fallback: apply CSS.
+                                    final Runnable applyCss = new Runnable() {
+                                        int attempts = 0;
+                                        @Override
+                                        public void run() {
+                                            if (web == null || !isInPictureInPictureMode()) return;
+                                            web.evaluateJavascript(
+                                                    "(function(){try{" +
+                                                    "var s=document.getElementById('pip-style');" +
+                                                    "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
+                                                    "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
+                                                    "'video,iframe{position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;}' +" +
+                                                    "}';" +
+                                                    "var vs=document.querySelectorAll('video,iframe');" +
+                                                    "for(var i=0;i<vs.length;i++){vs[i].style.cssText='position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;';}" +
+                                                    "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
+                                                    "var v2=document.querySelector('video');if(v2)v2.style.cssText='position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;';" +
+                                                    "var f2=document.querySelector('iframe');if(f2)f2.style.cssText='position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;';" +
+                                                    "});window.__pipObs.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['style','class']});}" +
+                                                    "}catch(e){console.log('PiP CSS error: '+e);}" +
+                                                    "})()",
+                                                    null);
+                                            attempts++;
+                                            if (attempts < 5) {
+                                                web.postDelayed(this, 200);
+                                            }
+                                        }
+                                    };
+                                    applyCss.run();
+                                }
+                            }
+                        });
             }
             hideSystemUi();
         } else {
