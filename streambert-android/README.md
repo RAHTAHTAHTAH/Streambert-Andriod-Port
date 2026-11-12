@@ -369,6 +369,24 @@ Output: `Streambert-Mobile.apk`, signed with the release keystore
 The keystore is committed to the repository so all builds share the same
 signing certificate, which the in-app updater requires for upgrades.
 
+### Automated releases (GitHub Actions)
+
+A workflow at `.github/workflows/release.yml` builds and publishes the APK
+automatically when a `v*` tag is pushed. It:
+
+1. Sets up JDK 17 and the Android SDK
+2. Optionally decodes a keystore from the `RELEASE_KEYSTORE_BASE64` secret
+   (falls back to the committed keystore)
+3. Runs `build.sh`
+4. Creates a GitHub Release with the APK attached
+
+**Repository secrets** (optional — the committed keystore is used if absent):
+- `RELEASE_KEYSTORE_BASE64` — base64-encoded keystore file
+- `RELEASE_KEYSTORE_PASSWORD` — keystore password
+
+To trigger a release: push a tag (e.g. `git tag v1.0.5 && git push origin v1.0.5`)
+or use the manual `workflow_dispatch` trigger.
+
 ### Project layout
 
 ```

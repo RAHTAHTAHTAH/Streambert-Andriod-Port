@@ -197,15 +197,16 @@ cp "$build/dex/classes.dex" "$build/stage/classes.dex"
 run_tool "$bt/zipalign" -f 4 "$build/unsigned.apk" "$build/aligned.apk"
 
 echo "[6/7] Signing..."
-ks="$root/streambert-release.keystore"
+ks="${RELEASE_KEYSTORE_PATH:-$root/streambert-release.keystore}"
 if [ ! -f "$ks" ]; then
   echo "Release keystore not found at $ks" >&2
   echo "Generate one with:" >&2
   echo "  keytool -genkeypair -keystore streambert-release.keystore -alias streambert -keyalg RSA -keysize 2048 -validity 10000" >&2
   exit 1
 fi
+ks_pass="${RELEASE_KEYSTORE_PASSWORD:-streambert-release}"
 "$java_bin" -jar "$bt/lib/apksigner.jar" sign --ks "$ks" \
-  --ks-pass pass:streambert-release --key-pass pass:streambert-release \
+  --ks-pass "pass:$ks_pass" --key-pass "pass:$ks_pass" \
   --ks-key-alias streambert \
   --out "$root/Streambert-Mobile.apk" "$build/aligned.apk"
 
