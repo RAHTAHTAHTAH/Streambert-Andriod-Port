@@ -4,7 +4,14 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.app.PendingIntent;
 import android.app.PictureInPictureParams;
+import android.app.RemoteAction;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.graphics.drawable.Icon;
 import android.util.Rational;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -98,6 +105,11 @@ public class PlayerActivity extends Activity {
     private View customView;
     private WebChromeClient.CustomViewCallback customViewCallback;
     private WebChromeClient chrome;
+
+    private static final String ACTION_PIP_CLOSE = "com.streambert.mobile.PIP_CLOSE";
+    private static final String ACTION_PIP_PLAY = "com.streambert.mobile.PIP_PLAY";
+    private static final String ACTION_PIP_PAUSE = "com.streambert.mobile.PIP_PAUSE";
+    private BroadcastReceiver pipReceiver;
 
     // ---- "Download season" queue -------------------------------------
     private static final class Episode {
@@ -318,6 +330,31 @@ public class PlayerActivity extends Activity {
             WebView.setWebContentsDebuggingEnabled(
                     (getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0);
         }
+
+        // Register PiP action receiver.
+        pipReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (intent == null || web == null) return;
+                String action = intent.getAction();
+                if (ACTION_PIP_CLOSE.equals(action)) {
+                    finish();
+                } else if (ACTION_PIP_PLAY.equals(action)) {
+                    web.evaluateJavascript(
+                            "(function(){var v=document.querySelector('video');if(v)v.play();})()", null);
+                    updatePipParams();
+                } else if (ACTION_PIP_PAUSE.equals(action)) {
+                    web.evaluateJavascript(
+                            "(function(){var v=document.querySelector('video');if(v)v.pause();})()", null);
+                    updatePipParams();
+                }
+            }
+        };
+        IntentFilter pipFilter = new IntentFilter();
+        pipFilter.addAction(ACTION_PIP_CLOSE);
+        pipFilter.addAction(ACTION_PIP_PLAY);
+        pipFilter.addAction(ACTION_PIP_PAUSE);
+        registerReceiver(pipReceiver, pipFilter);
 
         hideSystemUi();
 
@@ -918,12 +955,67 @@ public class PlayerActivity extends Activity {
             return;
         }
         try {
-            PictureInPictureParams params = new PictureInPictureParams.Builder()
-                    .setAspectRatio(new Rational(16, 9))
-                    .build();
-            enterPictureInPictureMode(params);
+            // Make the hoster's video fill the WebView before entering PiP.
+            if (web != null) {
+                web.evaluateJavascript(
+                        "(function(){try{var s=document.createElement('style');" +
+                        "s.id='pip-style';s.textContent='video{width:100%!important;height:100%!important;object-fit:contain!important;position:fixed!important;top:0!important;left:0!important;}';" +
+                        "if(!document.getElementById('pip-style'))document.head.appendChild(s);}catch(e){}})();",
+                        null);
+            }
+            updatePipParams();
+            enterPictureInPictureMode(buildPipParams());
         } catch (Exception e) {
             toast("Could not enter Picture-in-Picture");
+        }
+    }
+
+    private PictureInPictureParams buildPipParams() {
+        PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder()
+                .setAspectRatio(new Rational(16, 9));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            try {
+                List<RemoteAction> actions = new ArrayList<>();
+
+                // Play
+                Intent playIntent = new Intent(ACTION_PIP_PLAY);
+                PendingIntent playPending = PendingIntent.getBroadcast(
+                        this, 1, playIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                actions.add(new RemoteAction(
+                        Icon.createWithResource(this, android.R.drawable.ic_media_play),
+                        "Play", "Play", playPending));
+
+                // Pause
+                Intent pauseIntent = new Intent(ACTION_PIP_PAUSE);
+                PendingIntent pausePending = PendingIntent.getBroadcast(
+                        this, 2, pauseIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                actions.add(new RemoteAction(
+                        Icon.createWithResource(this, android.R.drawable.ic_media_pause),
+                        "Pause", "Pause", pausePending));
+
+                // Close
+                Intent closeIntent = new Intent(ACTION_PIP_CLOSE);
+                PendingIntent closePending = PendingIntent.getBroadcast(
+                        this, 3, closeIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+                actions.add(new RemoteAction(
+                        Icon.createWithResource(this, android.R.drawable.ic_menu_close_clear_cancel),
+                        "Close", "Close", closePending));
+
+                builder.setActions(actions);
+            } catch (Exception ignored) {
+            }
+        }
+        return builder.build();
+    }
+
+    private void updatePipParams() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
+        try {
+            setPictureInPictureParams(buildPipParams());
+        } catch (Exception ignored) {
         }
     }
 
@@ -1018,10 +1110,15 @@ public class PlayerActivity extends Activity {
         // Auto-enter PiP when the user presses Home while playing.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isFinishing()) {
             try {
-                PictureInPictureParams params = new PictureInPictureParams.Builder()
-                        .setAspectRatio(new Rational(16, 9))
-                        .build();
-                enterPictureInPictureMode(params);
+                if (web != null) {
+                    web.evaluateJavascript(
+                            "(function(){try{var s=document.createElement('style');" +
+                            "s.id='pip-style';s.textContent='video{width:100%!important;height:100%!important;object-fit:contain!important;position:fixed!important;top:0!important;left:0!important;}';" +
+                            "if(!document.getElementById('pip-style'))document.head.appendChild(s);}catch(e){}})();",
+                            null);
+                }
+                updatePipParams();
+                enterPictureInPictureMode(buildPipParams());
             } catch (Exception ignored) {
             }
         }
@@ -1034,12 +1131,30 @@ public class PlayerActivity extends Activity {
         if (isInPictureInPictureMode) {
             // Hide the top bar and any overlays in PiP.
             if (topBar != null) topBar.setVisibility(View.GONE);
+            if (web != null) {
+                web.setLayoutParams(new FrameLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT));
+                web.requestLayout();
+                // Make the hoster's video fill the WebView in PiP.
+                web.evaluateJavascript(
+                        "(function(){try{var s=document.createElement('style');" +
+                        "s.id='pip-style';s.textContent='video{width:100%!important;height:100%!important;object-fit:contain!important;}';" +
+                        "if(!document.getElementById('pip-style'))document.head.appendChild(s);}catch(e){}})();",
+                        null);
+            }
             hideSystemUi();
         } else {
             // Restore when leaving PiP.
             if (topBar != null) setTopBarVisible(false);
+            if (web != null) {
+                web.evaluateJavascript(
+                        "(function(){try{var s=document.getElementById('pip-style');if(s)s.remove();}catch(e){}})();",
+                        null);
+            }
             hideSystemUi();
         }
+        updatePipParams();
     }
 
     @Override
@@ -1053,6 +1168,10 @@ public class PlayerActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (pipReceiver != null) {
+            try { unregisterReceiver(pipReceiver); } catch (Exception ignored) {}
+            pipReceiver = null;
+        }
         if (customView != null) {
             root.removeView(customView);
             customView = null;
