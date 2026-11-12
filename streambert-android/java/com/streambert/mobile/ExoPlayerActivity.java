@@ -35,10 +35,12 @@ public class ExoPlayerActivity extends Activity {
     public static final String EXTRA_IS_LOCAL = "isLocal";
 
     private static final long SEEK_MS = 10000L;
+    private static final int REQ_SUBTITLE = 1001;
 
     private ExoPlayer player;
     private PlayerView playerView;
     private String streamUrl;
+    private Uri subtitleUri = null;
 
     private GestureDetector gestureDetector;
     private AudioManager audioManager;
@@ -91,6 +93,22 @@ public class ExoPlayerActivity extends Activity {
         extParams.topMargin = 16;
         extParams.rightMargin = 16;
         root.addView(extBtn, extParams);
+
+        // Subtitle picker button (top-right, left of external)
+        TextView subBtn = new TextView(this);
+        subBtn.setText("CC");
+        subBtn.setTextSize(14);
+        subBtn.setTextColor(0xFFFFFFFF);
+        subBtn.setPadding(16, 8, 16, 8);
+        subBtn.setBackgroundColor(0x66000000);
+        subBtn.setOnClickListener(v -> pickSubtitle());
+        FrameLayout.LayoutParams subParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        subParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        subParams.topMargin = 16;
+        subParams.rightMargin = 120;
+        root.addView(subBtn, subParams);
 
         // Gesture feedback overlay
         gestureOverlay = new TextView(this);
@@ -274,6 +292,71 @@ public class ExoPlayerActivity extends Activity {
             player.release();
             player = null;
         }
+    }
+
+    private void pickSubtitle() {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        String[] mimeTypes = {
+                "text/vtt", "text/plain", "application/x-subrip",
+                "text/srt", "application/octet-stream"
+        };
+        intent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        try {
+            startActivityForResult(intent, REQ_SUBTITLE);
+        } catch (Exception e) {
+            Toast.makeText(this, "No file picker available", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQ_SUBTITLE || resultCode != RESULT_OK || data == null) return;
+        Uri uri = data.getData();
+        if (uri == null) return;
+        try {
+            getContentResolver().takePersistableUriPermission(uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } catch (Exception ignored) {
+        }
+        subtitleUri = uri;
+        applySubtitle();
+    }
+
+    private void applySubtitle() {
+        if (player == null || streamUrl == null || subtitleUri == null) return;
+        long pos = player.getCurrentPosition();
+        boolean wasPlaying = player.isPlaying();
+
+        String mime = "text/vtt";
+        String path = subtitleUri.getPath();
+        if (path != null) {
+            String lower = path.toLowerCase();
+            if (lower.endsWith(".srt")) mime = "application/x-subrip";
+            else if (lower.endsWith(".vtt")) mime = "text/vtt";
+            else if (lower.endsWith(".ass") || lower.endsWith(".ssa")) mime = "text/x-ssa";
+        }
+
+        MediaItem.SubtitleConfiguration subConfig =
+                new MediaItem.SubtitleConfiguration.Builder(subtitleUri)
+                        .setMimeType(mime)
+                        .setLanguage("und")
+                        .setSelectionFlags(
+                                androidx.media3.common.C.SELECTION_FLAG_DEFAULT)
+                        .build();
+
+        MediaItem mediaItem = new MediaItem.Builder()
+                .setUri(Uri.parse(streamUrl))
+                .setSubtitleConfigurations(java.util.Collections.singletonList(subConfig))
+                .build();
+
+        player.setMediaItem(mediaItem);
+        player.prepare();
+        player.seekTo(pos);
+        if (wasPlaying) player.play();
+        Toast.makeText(this, "Subtitle loaded", Toast.LENGTH_SHORT).show();
     }
 
     private void openInExternalPlayer() {
