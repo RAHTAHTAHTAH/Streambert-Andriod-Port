@@ -322,8 +322,10 @@ blur. Nothing about the layout changes.
   HLS downloader instead; the legacy desktop download dialog is intercepted and
   replaced by the native one.
 - HiAnime / AllManga scraping — the app automatically falls back to another source.
-- Subtitle search and download (Wyzie).
-- Scheduled backups, Discord Rich Presence, PiP desktop window, tray/zoom/window controls.
+- Subtitle search and download via SubDL/Wyzie (desktop scrapers; replaced on
+  Android by the native OpenSubtitles engine in BridgeSubtitles).
+- Scheduled backups, Discord Rich Presence, tray/zoom/window controls.
+  (PiP desktop window replaced by Android native PiP in PlayerActivity.)
 
 ---
 

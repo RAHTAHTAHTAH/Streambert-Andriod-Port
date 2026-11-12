@@ -4,6 +4,8 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.DownloadManager;
+import android.app.PictureInPictureParams;
+import android.util.Rational;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -403,6 +405,11 @@ public class PlayerActivity extends Activity {
         downloadBtn.setVisibility(View.GONE);
         downloadBtn.setOnClickListener(v -> handleDownload());
 
+        TextView pipBtn = makeButton("\u29C9");
+        pipBtn.setTextSize(18);
+        pipBtn.setContentDescription("Picture in Picture");
+        pipBtn.setOnClickListener(v -> enterPipMode());
+
         TextView browserBtn = makeButton("\u2197");
         browserBtn.setTextSize(18);
         browserBtn.setContentDescription("Open in browser");
@@ -411,6 +418,7 @@ public class PlayerActivity extends Activity {
         topBar.addView(close, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(titleView);
         topBar.addView(downloadBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        topBar.addView(pipBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(browserBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
 
         FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(
@@ -903,6 +911,22 @@ public class PlayerActivity extends Activity {
         return name;
     }
 
+    /** Enter Picture-in-Picture mode (Android 8.0+). */
+    private void enterPipMode() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+            toast("Picture-in-Picture requires Android 8.0+");
+            return;
+        }
+        try {
+            PictureInPictureParams params = new PictureInPictureParams.Builder()
+                    .setAspectRatio(new Rational(16, 9))
+                    .build();
+            enterPictureInPictureMode(params);
+        } catch (Exception e) {
+            toast("Could not enter Picture-in-Picture");
+        }
+    }
+
     private void openInBrowser() {
         String url = lastMediaUrl != null ? lastMediaUrl : pageUrl;
         try {
@@ -986,6 +1010,36 @@ public class PlayerActivity extends Activity {
         super.onResume();
         if (web != null) web.onResume();
         hideSystemUi();
+    }
+
+    @Override
+    public void onUserLeaveHint() {
+        super.onUserLeaveHint();
+        // Auto-enter PiP when the user presses Home while playing.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !isFinishing()) {
+            try {
+                PictureInPictureParams params = new PictureInPictureParams.Builder()
+                        .setAspectRatio(new Rational(16, 9))
+                        .build();
+                enterPictureInPictureMode(params);
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
+    @Override
+    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode,
+                                             android.content.res.Configuration newConfig) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
+        if (isInPictureInPictureMode) {
+            // Hide the top bar and any overlays in PiP.
+            if (topBar != null) topBar.setVisibility(View.GONE);
+            hideSystemUi();
+        } else {
+            // Restore when leaving PiP.
+            if (topBar != null) setTopBarVisible(false);
+            hideSystemUi();
+        }
     }
 
     @Override

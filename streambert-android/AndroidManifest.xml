@@ -46,6 +46,12 @@
             android:exported="false"
             android:foregroundServiceType="dataSync" />
 
+        <!-- Background provider health checks (JobScheduler). -->
+        <service
+            android:name=".ProviderHealthJobService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="true" />
+
         <!-- Serves the downloaded update APK to the installer through a
              temporary read grant; no other app can read app files. -->
         <provider
@@ -59,13 +65,17 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
-            android:screenOrientation="sensorLandscape" />
+            android:screenOrientation="sensorLandscape"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true" />
 
         <activity
             android:name=".VideoPlayerActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
-            android:screenOrientation="sensorLandscape" />
+            android:screenOrientation="sensorLandscape"
+            android:supportsPictureInPicture="true"
+            android:resizeableActivity="true" />
     </application>
 </manifest>

@@ -19,6 +19,8 @@ public class Bridge {
     private final BridgeDownloads downloads;
     private final BridgeSecurity security;
     private final BridgeUpdater updater;
+    private final BridgeSubtitles subtitles;
+    private final BridgeProviders providers;
 
     public Bridge(MainActivity activity) {
         this.activity = activity;
@@ -27,6 +29,8 @@ public class Bridge {
         this.downloads = new BridgeDownloads(activity);
         this.security = new BridgeSecurity(activity);
         this.updater = new BridgeUpdater(activity);
+        this.subtitles = new BridgeSubtitles(activity);
+        this.providers = new BridgeProviders(activity);
     }
 
     // -- core -------------------------------------------------------------
@@ -94,4 +98,38 @@ public class Bridge {
     public void setAutoUpdateCheck(boolean enabled) { updater.setAutoUpdateCheck(enabled); }
     @android.webkit.JavascriptInterface
     public void installPendingUpdate() { updater.installPendingUpdate(); }
+
+    // -- subtitles --------------------------------------------------------
+    @android.webkit.JavascriptInterface
+    public void setOpenSubtitlesApiKey(String key) { subtitles.setOpenSubtitlesApiKey(key); }
+    @android.webkit.JavascriptInterface
+    public String getOpenSubtitlesApiKey() { return subtitles.getOpenSubtitlesApiKey(); }
+    @android.webkit.JavascriptInterface
+    public boolean hasOpenSubtitlesApiKey() { return subtitles.hasOpenSubtitlesApiKey(); }
+    @android.webkit.JavascriptInterface
+    public String searchSubtitles(String query, String language) { return subtitles.searchSubtitles(query, language); }
+    @android.webkit.JavascriptInterface
+    public String getSubtitleDownloadUrl(int fileId) { return subtitles.getSubtitleDownloadUrl(fileId); }
+    @android.webkit.JavascriptInterface
+    public String downloadSubtitle(int fileId, String fileName) { return subtitles.downloadSubtitle(fileId, fileName); }
+    @android.webkit.JavascriptInterface
+    public String listCachedSubtitles() { return subtitles.listCachedSubtitles(); }
+    @android.webkit.JavascriptInterface
+    public boolean deleteSubtitle(String fileName) { return subtitles.deleteSubtitle(fileName); }
+    @android.webkit.JavascriptInterface
+    public String getSubtitlePath(String fileName) { return subtitles.getSubtitlePath(fileName); }
+
+    // -- providers --------------------------------------------------------
+    @android.webkit.JavascriptInterface
+    public String getProviderHealth() { return providers.getProviderHealth(); }
+    @android.webkit.JavascriptInterface
+    public void checkProvidersNow() { providers.checkProvidersNow(); }
+    @android.webkit.JavascriptInterface
+    public String getProviders() { return providers.getProviders(); }
+    @android.webkit.JavascriptInterface
+    public void setProviders(String json) { providers.setProviders(json); }
+    @android.webkit.JavascriptInterface
+    public void scheduleBackgroundChecks(long intervalMs) { providers.scheduleBackgroundChecks(intervalMs); }
+    @android.webkit.JavascriptInterface
+    public void cancelBackgroundChecks() { providers.cancelBackgroundChecks(); }
 }

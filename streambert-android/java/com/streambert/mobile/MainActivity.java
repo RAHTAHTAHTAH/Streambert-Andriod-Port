@@ -115,6 +115,8 @@ public class MainActivity extends Activity {
         web.addJavascriptInterface(new BridgeDownloads(this), "AndroidDownloads");
         web.addJavascriptInterface(new BridgeSecurity(this), "AndroidSecurity");
         web.addJavascriptInterface(new BridgeUpdater(this), "AndroidUpdater");
+        web.addJavascriptInterface(new BridgeSubtitles(this), "AndroidSubtitles");
+        web.addJavascriptInterface(new BridgeProviders(this), "AndroidProviders");
         // Backward-compatible aggregate facade (holds no logic of its own).
         web.addJavascriptInterface(new Bridge(this), "Android");
         web.setWebViewClient(new WebViewClient() {
@@ -226,6 +228,9 @@ public class MainActivity extends Activity {
         });
 
         registerDownloadReceiver();
+
+        // Schedule periodic provider health checks (1 hour interval).
+        ProviderHealthJobService.schedule(this, 60 * 60 * 1000L);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             // Debugging was left on for every build, which keeps the inspector
             // agent attached in release and costs memory/CPU on weak devices.

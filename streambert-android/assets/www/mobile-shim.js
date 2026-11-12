@@ -193,18 +193,66 @@
     },
     getVideoDuration: function () { return Promise.resolve({ ok: false, duration: 0 }); },
 
-    // -- subtitles -------------------------------------------------------
-    searchSubtitles: function () {
-      return Promise.resolve({
-        ok: false,
-        error: "Subtitle search is not available in this mobile build.",
-      });
+    // -- subtitles (native OpenSubtitles engine) --------------------------
+    // The native BridgeSubtitles class talks to the OpenSubtitles REST API
+    // directly (no WebView scraping) and caches downloaded files locally.
+    searchSubtitles: function (args) {
+      var query = (args && args.query) ? args.query : (args || "");
+      var language = (args && args.language) ? args.language : "";
+      var raw = null;
+      try {
+        if (bridge.searchSubtitles) raw = bridge.searchSubtitles(String(query), String(language));
+      } catch (e) {}
+      return Promise.resolve(raw ? JSON.parse(raw) : { ok: false, error: "Subtitle search unavailable" });
     },
-    getSubtitleUrl: function () { return Promise.resolve(null); },
-    downloadSubtitlesForFile: function () {
-      return Promise.resolve({ ok: false, error: "Not available on Android" });
+    getSubtitleUrl: function (fileId) {
+      var raw = null;
+      try {
+        if (bridge.getSubtitleDownloadUrl) raw = bridge.getSubtitleDownloadUrl(Number(fileId) || 0);
+      } catch (e) {}
+      if (!raw) return Promise.resolve(null);
+      try { var parsed = JSON.parse(raw); return Promise.resolve(parsed.ok ? parsed.url : null); }
+      catch (e) { return Promise.resolve(null); }
     },
-    deleteSubtitleFile: function () { return Promise.resolve({ ok: false }); },
+    downloadSubtitlesForFile: function (args) {
+      var fileId = (args && args.fileId) ? args.fileId : (args && args.id ? args.id : 0);
+      var fileName = (args && args.fileName) ? args.fileName : "";
+      var raw = null;
+      try {
+        if (bridge.downloadSubtitle) raw = bridge.downloadSubtitle(Number(fileId) || 0, String(fileName));
+      } catch (e) {}
+      return Promise.resolve(raw ? JSON.parse(raw) : { ok: false, error: "Not available on Android" });
+    },
+    deleteSubtitleFile: function (args) {
+      var name = (args && args.fileName) ? args.fileName : (args || "");
+      var ok = false;
+      try { if (bridge.deleteSubtitle) ok = !!bridge.deleteSubtitle(String(name)); } catch (e) {}
+      return Promise.resolve({ ok: ok });
+    },
+    listCachedSubtitles: function () {
+      var raw = null;
+      try { if (bridge.listCachedSubtitles) raw = bridge.listCachedSubtitles(); } catch (e) {}
+      return Promise.resolve(raw ? JSON.parse(raw) : { ok: true, files: [] });
+    },
+    getSubtitlePath: function (fileName) {
+      var path = null;
+      try { if (bridge.getSubtitlePath) path = bridge.getSubtitlePath(String(fileName)); } catch (e) {}
+      return Promise.resolve(path);
+    },
+    setOpenSubtitlesApiKey: function (key) {
+      try { if (bridge.setOpenSubtitlesApiKey) bridge.setOpenSubtitlesApiKey(String(key)); } catch (e) {}
+      return Promise.resolve();
+    },
+    getOpenSubtitlesApiKey: function () {
+      var key = "";
+      try { if (bridge.getOpenSubtitlesApiKey) key = bridge.getOpenSubtitlesApiKey(); } catch (e) {}
+      return Promise.resolve(key);
+    },
+    hasOpenSubtitlesApiKey: function () {
+      var has = false;
+      try { if (bridge.hasOpenSubtitlesApiKey) has = !!bridge.hasOpenSubtitlesApiKey(); } catch (e) {}
+      return Promise.resolve(has);
+    },
     wyzieOpenRedeem: function () {
       openExternal("https://store.wyzie.ru/");
       return Promise.resolve();
@@ -212,7 +260,7 @@
     wyzieValidateKey: function () {
       return Promise.resolve({
         ok: false,
-        error: "Wyzie keys are not supported in this mobile build.",
+        error: "Wyzie keys are not supported in this mobile build; use OpenSubtitles instead.",
       });
     },
 
@@ -326,6 +374,34 @@
     // -- discord (desktop-only) ------------------------------------------
     discordRpcSetEnabled: function () { return Promise.resolve(); },
     discordRpcUpdateActivity: function () { return Promise.resolve(); },
+
+    // -- provider health (background JobScheduler checks) -----------------
+    getProviderHealth: function () {
+      var raw = null;
+      try { if (bridge.getProviderHealth) raw = bridge.getProviderHealth(); } catch (e) {}
+      return Promise.resolve(raw ? JSON.parse(raw) : { ok: true, results: [], lastCheck: 0 });
+    },
+    checkProvidersNow: function () {
+      try { if (bridge.checkProvidersNow) bridge.checkProvidersNow(); } catch (e) {}
+      return Promise.resolve();
+    },
+    getProviders: function () {
+      var raw = "[]";
+      try { if (bridge.getProviders) raw = bridge.getProviders(); } catch (e) {}
+      try { return Promise.resolve(JSON.parse(raw)); } catch (e) { return Promise.resolve([]); }
+    },
+    setProviders: function (list) {
+      try { if (bridge.setProviders) bridge.setProviders(JSON.stringify(list || [])); } catch (e) {}
+      return Promise.resolve();
+    },
+    scheduleBackgroundChecks: function (intervalMs) {
+      try { if (bridge.scheduleBackgroundChecks) bridge.scheduleBackgroundChecks(Number(intervalMs) || 3600000); } catch (e) {}
+      return Promise.resolve();
+    },
+    cancelBackgroundChecks: function () {
+      try { if (bridge.cancelBackgroundChecks) bridge.cancelBackgroundChecks(); } catch (e) {}
+      return Promise.resolve();
+    },
 
     fetchReleaseImage: function () { return Promise.resolve(null); },
 

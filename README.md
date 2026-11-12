@@ -67,6 +67,8 @@ Core browsing & playback
 - Library: watchlist, history, continue watching
 - Streaming from multiple providers (Videasy, Vidking, VidSrc, etc.) with in-app source switching
 - Full-screen native player (tap to reveal controls, auto-hide after 3.5 s)
+- Picture-in-Picture mode (Android 8.0+): tap the PiP button in the player bar,
+  or press Home while playing to keep the video in a floating window
 - Ad blocking in the player WebView
 - Watched threshold / auto-mark watched
 - Autoplay next episode with countdown and overlay position
@@ -84,7 +86,22 @@ Metadata & parental controls
 
 Subtitles
 - Subtitle language preference
-- Subtitle settings (SubDL / Wyzie API keys where supported)
+- Native subtitle search & download via OpenSubtitles REST API (no WebView
+  scraping): search by title/IMDB id, pick a language, download and cache
+  subtitle files locally for playback
+- OpenSubtitles API key configurable in Settings (free registration at
+  opensubtitles.com); without a key the search reports how to obtain one
+- Cached subtitles can be listed and deleted from the Downloads page
+
+Background provider health
+- Uses Android's built-in JobScheduler (no external dependencies) to
+  periodically check stream provider (hoster) URLs for reachability in the
+  background, even when the app is closed
+- Results are cached in SharedPreferences and exposed to the renderer via
+  the AndroidProviders bridge (getProviderHealth, checkProvidersNow,
+  getProviders/setProviders, scheduleBackgroundChecks/cancelBackgroundChecks)
+- Default check interval: 1 hour (minimum 15 minutes enforced by Android)
+- Manual "check now" available for immediate re-check
 
 Settings & appearance
 - Theme presets + custom colour editor
@@ -171,9 +188,9 @@ mobile Settings page):
   "notify on download complete" toggle is removed because Android always posts one)
 
 Features that are limited or unavailable on Android:
-- Subtitle search/download (SubDL/Wyzie flows are disabled in this build; only the manual settings remain)
+- Subtitle search/download via SubDL/Wyzie (desktop scrapers; replaced on
+  Android by the native OpenSubtitles engine above)
 - HiAnime resolver (desktop scraper; unavailable on mobile)
-- PiP window mode
 - Drag-and-drop / file-system scanning of a local folder
 - Scheduled backup export to a chosen folder
 - Some hosters that require a desktop browser environment
