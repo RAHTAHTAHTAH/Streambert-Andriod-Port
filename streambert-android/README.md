@@ -87,7 +87,7 @@ adapt it for phones:
   rated, new/airing, plus genre rows) and uses the same carousel component as
   the rest of the app, so age ratings and the age limit still apply. The Anime
   tab is TMDB Japanese animation (genre 16 + original language `ja`), with the
-  app's ANIME badge; the HiAnime source is not available in this build. Rows
+  app's ANIME badge; the HiAnime source is now available via the native resolver. Rows
   are cached for ten minutes, and the last tab is restored after visiting a
   detail page.
 - **Profiles.** Once two or more profiles exist, a Netflix-style
@@ -321,7 +321,7 @@ blur. Nothing about the layout changes.
 - The desktop downloader (`vid-dl-cli` + ffmpeg). The mobile player has its own
   HLS downloader instead; the legacy desktop download dialog is intercepted and
   replaced by the native one.
-- HiAnime / AllManga scraping — the app automatically falls back to another source.
+- AllManga scraping — the app automatically falls back to another source.
 - Subtitle search and download via SubDL/Wyzie (desktop scrapers; replaced on
   Android by the native OpenSubtitles engine in BridgeSubtitles).
 - Scheduled backups, Discord Rich Presence, tray/zoom/window controls.

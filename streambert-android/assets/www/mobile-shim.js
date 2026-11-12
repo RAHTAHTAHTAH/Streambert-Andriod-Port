@@ -264,8 +264,14 @@
       });
     },
 
-    // -- anime resolver (desktop main-process scraper; unavailable) ------
-    resolveHiAnime: function () {
+    // -- anime resolver (native HiAnime scraper via OkHttp/HttpURLConnection) --
+    resolveHiAnime: function (params) {
+      try {
+        if (bridge.resolveHiAnime) {
+          var result = bridge.resolveHiAnime(JSON.stringify(params || {}));
+          return Promise.resolve(JSON.parse(result));
+        }
+      } catch (e) { console.error("resolveHiAnime", e); }
       return Promise.resolve({
         ok: false,
         error: "HiAnime is not supported in this mobile build - switching source.",

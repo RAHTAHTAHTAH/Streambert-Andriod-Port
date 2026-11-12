@@ -21,6 +21,7 @@ public class Bridge {
     private final BridgeUpdater updater;
     private final BridgeSubtitles subtitles;
     private final BridgeProviders providers;
+    private final BridgeAnime anime;
 
     public Bridge(MainActivity activity) {
         this.activity = activity;
@@ -31,6 +32,7 @@ public class Bridge {
         this.updater = new BridgeUpdater(activity);
         this.subtitles = new BridgeSubtitles(activity);
         this.providers = new BridgeProviders(activity);
+        this.anime = new BridgeAnime(activity);
     }
 
     // -- core -------------------------------------------------------------
@@ -132,4 +134,8 @@ public class Bridge {
     public void scheduleBackgroundChecks(long intervalMs) { providers.scheduleBackgroundChecks(intervalMs); }
     @android.webkit.JavascriptInterface
     public void cancelBackgroundChecks() { providers.cancelBackgroundChecks(); }
+
+    // -- anime (HiAnime resolver) ---------------------------------------
+    @android.webkit.JavascriptInterface
+    public String resolveHiAnime(String paramsJson) { return anime.resolveHiAnime(paramsJson); }
 }

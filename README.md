@@ -87,6 +87,7 @@ Core browsing & playback
 - Ad blocking in the player WebView
 - Watched threshold / auto-mark watched
 - Autoplay next episode with countdown and overlay position
+- Anime streaming via native HiAnime resolver (HttpURLConnection-based scraper, no WebView CORS limits): searches HiAnime, resolves episodes and extracts stream URLs
 - Anime intro skip via AniSkip (HiAnime source)
 - Trailer playback via Invidious (privacy-friendly YouTube frontend, with fallback instances)
 
@@ -205,7 +206,6 @@ mobile Settings page):
 Features that are limited or unavailable on Android:
 - Subtitle search/download via SubDL/Wyzie (desktop scrapers; replaced on
   Android by the native OpenSubtitles engine above)
-- HiAnime resolver (desktop scraper; unavailable on mobile)
 - Drag-and-drop / file-system scanning of a local folder
 - Scheduled backup export to a chosen folder
 - Some hosters that require a desktop browser environment
