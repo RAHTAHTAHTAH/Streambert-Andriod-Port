@@ -1,3 +1,6 @@
 # Build intermediates
 streambert-android/build/
+streambert-android/.gradle/
+streambert-android/app/build/
+streambert-android/local.properties
 *.apk

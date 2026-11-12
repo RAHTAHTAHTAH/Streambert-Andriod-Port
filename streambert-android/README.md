@@ -364,6 +364,15 @@ cd streambert-android
 ANDROID_HOME=~/Android/Sdk JAVA_HOME=/path/to/jdk-21 ./build.sh
 ```
 
+Gradle (preferred now that WorkManager is a dependency):
+
+```bash
+cd streambert-android
+export ANDROID_HOME=~/Android/Sdk
+export JAVA_HOME=/path/to/jdk-21
+./gradlew assembleRelease   # or: gradle assembleRelease
+```
+
 Output: `Streambert-Mobile.apk`, signed with the release keystore
 `streambert-release.keystore` (alias `streambert`, password `streambert-release`).
 The keystore is committed to the repository so all builds share the same

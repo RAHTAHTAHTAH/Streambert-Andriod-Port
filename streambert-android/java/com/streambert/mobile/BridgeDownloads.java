@@ -266,16 +266,23 @@ public class BridgeDownloads {
 
         try {
             if (hls) {
-                Intent service = new Intent(activity, DownloadService.class);
-                service.putExtra(DownloadService.EXTRA_URL, url);
-                service.putExtra(DownloadService.EXTRA_UA, userAgent);
-                service.putExtra(DownloadService.EXTRA_TITLE, title);
-                service.putExtra(DownloadService.EXTRA_REFERER, referer);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    activity.startForegroundService(service);
-                } else {
-                    activity.startService(service);
-                }
+                androidx.work.Data data = new androidx.work.Data.Builder()
+                        .putString(DownloadWorker.KEY_URL, url)
+                        .putString(DownloadWorker.KEY_UA, userAgent)
+                        .putString(DownloadWorker.KEY_TITLE, title)
+                        .putString(DownloadWorker.KEY_REFERER, referer)
+                        .build();
+                androidx.work.OneTimeWorkRequest req =
+                        new androidx.work.OneTimeWorkRequest.Builder(DownloadWorker.class)
+                                .setInputData(data)
+                                .setConstraints(new androidx.work.Constraints.Builder()
+                                        .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                        .build())
+                                .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                                        androidx.work.WorkRequest.MIN_BACKOFF_MILLIS,
+                                        java.util.concurrent.TimeUnit.MILLISECONDS)
+                                .build();
+                androidx.work.WorkManager.getInstance(activity).enqueue(req);
             } else {
                 String name = sanitizeTitle(title) + "-"
                         + System.currentTimeMillis() + ".mp4";

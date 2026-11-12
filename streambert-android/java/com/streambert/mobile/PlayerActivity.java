@@ -762,19 +762,26 @@ public class PlayerActivity extends Activity {
         }
 
         if (hls) {
-            Intent service = new Intent(this, DownloadService.class);
-            service.putExtra(DownloadService.EXTRA_URL, url);
-            service.putExtra(DownloadService.EXTRA_UA, userAgent);
-            service.putExtra(DownloadService.EXTRA_TITLE, name);
-            service.putExtra(DownloadService.EXTRA_NAME, name);
-            service.putExtra(DownloadService.EXTRA_REFERER, referer);
-            service.putExtra(DownloadService.EXTRA_INDEX, episode.number);
-            service.putExtra(DownloadService.EXTRA_TOTAL, seasonQueue.size());
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(service);
-            } else {
-                startService(service);
-            }
+            androidx.work.Data data = new androidx.work.Data.Builder()
+                    .putString(DownloadWorker.KEY_URL, url)
+                    .putString(DownloadWorker.KEY_UA, userAgent)
+                    .putString(DownloadWorker.KEY_TITLE, name)
+                    .putString(DownloadWorker.KEY_NAME, name)
+                    .putString(DownloadWorker.KEY_REFERER, referer)
+                    .putInt(DownloadWorker.KEY_INDEX, episode.number)
+                    .putInt(DownloadWorker.KEY_TOTAL, seasonQueue.size())
+                    .build();
+            androidx.work.OneTimeWorkRequest req =
+                    new androidx.work.OneTimeWorkRequest.Builder(DownloadWorker.class)
+                            .setInputData(data)
+                            .setConstraints(new androidx.work.Constraints.Builder()
+                                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                    .build())
+                            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                                    androidx.work.WorkRequest.MIN_BACKOFF_MILLIS,
+                                    java.util.concurrent.TimeUnit.MILLISECONDS)
+                            .build();
+            androidx.work.WorkManager.getInstance(this).enqueue(req);
             queuedCount++;
             return;
         }
@@ -950,17 +957,24 @@ public class PlayerActivity extends Activity {
             requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 43);
         }
 
-        Intent service = new Intent(this, DownloadService.class);
-        service.putExtra(DownloadService.EXTRA_URL, url);
-        service.putExtra(DownloadService.EXTRA_UA, userAgent);
-        service.putExtra(DownloadService.EXTRA_TITLE, title);
-        service.putExtra(DownloadService.EXTRA_REFERER, referer);
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(service);
-            } else {
-                startService(service);
-            }
+                try {
+            androidx.work.Data data = new androidx.work.Data.Builder()
+                    .putString(DownloadWorker.KEY_URL, url)
+                    .putString(DownloadWorker.KEY_UA, userAgent)
+                    .putString(DownloadWorker.KEY_TITLE, title)
+                    .putString(DownloadWorker.KEY_REFERER, referer)
+                    .build();
+            androidx.work.OneTimeWorkRequest req =
+                    new androidx.work.OneTimeWorkRequest.Builder(DownloadWorker.class)
+                            .setInputData(data)
+                            .setConstraints(new androidx.work.Constraints.Builder()
+                                    .setRequiredNetworkType(androidx.work.NetworkType.CONNECTED)
+                                    .build())
+                            .setBackoffCriteria(androidx.work.BackoffPolicy.EXPONENTIAL,
+                                    androidx.work.WorkRequest.MIN_BACKOFF_MILLIS,
+                                    java.util.concurrent.TimeUnit.MILLISECONDS)
+                            .build();
+            androidx.work.WorkManager.getInstance(this).enqueue(req);
             toast("Download started - progress is in the notification.");
         } catch (Exception e) {
             toast("Download failed: " + e.getMessage());
