@@ -3,7 +3,14 @@ package com.streambert.mobile;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.os.Environment;
+import android.os.StatFs;
+
+import java.io.File;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -19,6 +26,9 @@ import org.json.JSONObject;
 import java.util.Locale;
 
 public class BridgeDownloads {
+
+    private static final String PREFS = "streambert_settings";
+    private static final String KEY_WIFI_ONLY = "download_wifi_only";
 
     private final MainActivity activity;
 
@@ -117,6 +127,41 @@ public class BridgeDownloads {
                         Toast.LENGTH_LONG).show();
             }
         });
+    }
+
+    @android.webkit.JavascriptInterface
+    public boolean isWifiOnly() {
+        SharedPreferences prefs = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        return prefs.getBoolean(KEY_WIFI_ONLY, false);
+    }
+
+    @android.webkit.JavascriptInterface
+    public void setWifiOnly(boolean value) {
+        activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_WIFI_ONLY, value).apply();
+    }
+
+    @android.webkit.JavascriptInterface
+    public boolean isOnWifi() {
+        ConnectivityManager cm = (ConnectivityManager) activity
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return false;
+        NetworkInfo info = cm.getActiveNetworkInfo();
+        return info != null && info.isConnected()
+                && info.getType() == ConnectivityManager.TYPE_WIFI;
+    }
+
+    @android.webkit.JavascriptInterface
+    public long availableStorageMB() {
+        try {
+            File dir = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS);
+            StatFs stat = new StatFs(dir.getAbsolutePath());
+            long bytes = stat.getAvailableBlocksLong() * stat.getBlockSizeLong();
+            return bytes / (1024 * 1024);
+        } catch (Exception e) {
+            return -1;
+        }
     }
 
     @android.webkit.JavascriptInterface

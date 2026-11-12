@@ -335,6 +335,47 @@ public class PlayerActivity extends Activity {
         hideSystemUi();
 
         if (queueMode) {
+            // Storage space check: warn if less than 500 MB available.
+            try {
+                java.io.File dir = new java.io.File(
+                        Environment.getExternalStoragePublicDirectory(
+                                Environment.DIRECTORY_DOWNLOADS), "Streambert");
+                if (!dir.exists()) dir.mkdirs();
+                android.os.StatFs stat = new android.os.StatFs(dir.getAbsolutePath());
+                long availableMB = (stat.getAvailableBlocksLong()
+                        * stat.getBlockSizeLong()) / (1024 * 1024);
+                if (availableMB < 500) {
+                    android.widget.Toast.makeText(this,
+                            "Low storage: only " + availableMB
+                                    + " MB available. Downloads may fail.",
+                            android.widget.Toast.LENGTH_LONG).show();
+                }
+            } catch (Exception ignored) {
+            }
+
+            // Wi-Fi only check
+            try {
+                android.content.SharedPreferences prefs = getSharedPreferences(
+                        "streambert_settings", MODE_PRIVATE);
+                if (prefs.getBoolean("download_wifi_only", false)) {
+                    android.net.ConnectivityManager cm =
+                            (android.net.ConnectivityManager) getSystemService(
+                                    CONNECTIVITY_SERVICE);
+                    android.net.NetworkInfo info = cm == null ? null
+                            : cm.getActiveNetworkInfo();
+                    boolean onWifi = info != null && info.isConnected()
+                            && info.getType() == android.net.ConnectivityManager.TYPE_WIFI;
+                    if (!onWifi) {
+                        android.widget.Toast.makeText(this,
+                                "Wi-Fi only is enabled but not connected to Wi-Fi.",
+                                android.widget.Toast.LENGTH_LONG).show();
+                        finish();
+                        return;
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+
             // The queue drives the WebView itself; the thin player bar would
             // only get in the way.
             startQueueItem(0);

@@ -7,6 +7,9 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.content.pm.ServiceInfo;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -226,6 +229,39 @@ public class DownloadService extends Service {
     // ------------------------------------------------------------------
 
     private void runDownload(Job job) {
+        // Storage space check: require at least 100 MB free.
+        try {
+            java.io.File dir = new java.io.File(
+                    Environment.getExternalStoragePublicDirectory(
+                            Environment.DIRECTORY_DOWNLOADS), "Streambert");
+            if (!dir.exists()) dir.mkdirs();
+            android.os.StatFs stat = new android.os.StatFs(dir.getAbsolutePath());
+            long availableMB = (stat.getAvailableBlocksLong()
+                    * stat.getBlockSizeLong()) / (1024 * 1024);
+            if (availableMB < 100) {
+                if (!cancelled) {
+                    notifyFailed("Low storage: only " + availableMB + " MB available");
+                }
+                return;
+            }
+        } catch (Exception ignored) {
+        }
+
+        // Wi-Fi only check
+        SharedPreferences prefs = getSharedPreferences("streambert_settings", MODE_PRIVATE);
+        if (prefs.getBoolean("download_wifi_only", false)) {
+            ConnectivityManager cm = (ConnectivityManager) getSystemService(CONNECTIVITY_SERVICE);
+            NetworkInfo info = cm == null ? null : cm.getActiveNetworkInfo();
+            boolean onWifi = info != null && info.isConnected()
+                    && info.getType() == ConnectivityManager.TYPE_WIFI;
+            if (!onWifi) {
+                if (!cancelled) {
+                    notifyFailed("Wi-Fi only: not connected to Wi-Fi");
+                }
+                return;
+            }
+        }
+
         String baseName = job.name != null && !job.name.trim().isEmpty()
                 ? HlsDownloader.safeName(job.name)
                 : HlsDownloader.safeName(job.title) + "-" + System.currentTimeMillis();
