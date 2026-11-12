@@ -1132,7 +1132,7 @@ public class PlayerActivity extends Activity {
                             "'video,iframe{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;}' +" +
                             "}';" +
                             "var vs=document.querySelectorAll('video,iframe');" +
-                            "for(var i=0;i<vs.length;i++){vs[i].style.cssText='position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;';}" +
+                            "for(var i=0;i<vs.length;i++){vs[i].style.cssText='position:fixed!important;top:0!important;left:0!important;right:0!important;bottom:0!important;width:100vw!important;height:100vh!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;margin:0!important;padding:0!important;max-width:none!important;max-height:none!important;';}" +
                             "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
                             "var v2=document.querySelector('video');if(v2)v2.style.cssText='position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;';" +
                             "var f2=document.querySelector('iframe');if(f2)f2.style.cssText='position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;';" +
