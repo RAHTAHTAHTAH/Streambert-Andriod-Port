@@ -109,9 +109,10 @@ public class BridgeDownloads {
 
         activity.runOnUiThread(() -> {
             try {
-                Intent i = new Intent(activity, VideoPlayerActivity.class);
-                i.putExtra(VideoPlayerActivity.EXTRA_URI, finalUri.toString());
-                i.putExtra(VideoPlayerActivity.EXTRA_TITLE, path);
+                Intent i = new Intent(activity, ExoPlayerActivity.class);
+                i.putExtra(ExoPlayerActivity.EXTRA_URL, finalUri.toString());
+                i.putExtra(ExoPlayerActivity.EXTRA_TITLE, path);
+                i.putExtra(ExoPlayerActivity.EXTRA_IS_LOCAL, true);
                 i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 activity.startActivity(i);
             } catch (Exception e) {

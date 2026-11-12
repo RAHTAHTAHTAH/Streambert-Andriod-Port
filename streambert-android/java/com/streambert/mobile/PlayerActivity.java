@@ -423,10 +423,16 @@ public class PlayerActivity extends Activity {
         browserBtn.setContentDescription("Open in browser");
         browserBtn.setOnClickListener(v -> openInBrowser());
 
+        TextView exoBtn = makeButton("\u25B6");
+        exoBtn.setTextSize(14);
+        exoBtn.setContentDescription("Play in ExoPlayer");
+        exoBtn.setOnClickListener(v -> openInExoPlayer());
+
         topBar.addView(close, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(titleView);
         topBar.addView(downloadBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(browserBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        topBar.addView(exoBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
 
         FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -931,6 +937,22 @@ public class PlayerActivity extends Activity {
             startActivity(i);
         } catch (Exception e) {
             toast("No browser available");
+        }
+    }
+
+    private void openInExoPlayer() {
+        String url = lastMediaUrl;
+        if (url == null || url.isEmpty()) {
+            toast("No stream captured yet");
+            return;
+        }
+        try {
+            Intent i = new Intent(this, ExoPlayerActivity.class);
+            i.putExtra(ExoPlayerActivity.EXTRA_URL, url);
+            i.putExtra(ExoPlayerActivity.EXTRA_TITLE, title);
+            startActivity(i);
+        } catch (Exception e) {
+            toast("Could not open ExoPlayer");
         }
     }
 

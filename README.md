@@ -67,6 +67,8 @@ Core browsing & playback
 - Library: watchlist, history, continue watching
 - Streaming from multiple providers (Videasy, Vidking, VidSrc, etc.) with in-app source switching
 - Full-screen native player (tap to reveal controls, auto-hide after 3.5 s)
+- Native ExoPlayer (Media3) for direct streams and downloaded files: hardware
+  decoding, HLS/DASH support, native subtitle track switching
 - Ad blocking in the player WebView
 - Watched threshold / auto-mark watched
 - Autoplay next episode with countdown and overlay position

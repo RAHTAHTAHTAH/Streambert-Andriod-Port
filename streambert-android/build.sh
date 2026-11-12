@@ -102,10 +102,46 @@ echo "Version:  $version_name ($version_code)"
 
 build="$root/build"
 rm -rf "$build"
-mkdir -p "$build/gen" "$build/classes" "$build/dex" "$build/stage"
+mkdir -p "$build/gen" "$build/classes" "$build/dex" "$build/stage" "$build/lib-classes" "$build/lib-res"
+
+# --- Extract AARs / JARs --------------------------------------------------
+echo "Extracting libraries..."
+libs_dir="$root/libs"
+if [ -d "$libs_dir" ]; then
+  for aar in "$libs_dir"/*.aar; do
+    [ -f "$aar" ] || continue
+    name="$(basename "$aar" .aar)"
+    mkdir -p "$build/lib-classes/$name" "$build/lib-res/$name"
+    (cd "$build/lib-classes/$name" && unzip -q -o "$aar" classes.jar 2>/dev/null && unzip -q -o "$aar" 'classes.jar' 2>/dev/null || true)
+    # extract classes.jar contents
+    if [ -f "$build/lib-classes/$name/classes.jar" ]; then
+      (cd "$build/lib-classes/$name" && unzip -q -o classes.jar && rm -f classes.jar)
+    fi
+    # extract resources
+    (cd "$build/lib-res/$name" && unzip -q -o "$aar" 'res/*' 2>/dev/null || true)
+  done
+  # copy standalone jars
+  for jar in "$libs_dir"/*.jar; do
+    [ -f "$jar" ] || continue
+    name="$(basename "$jar" .jar)"
+    mkdir -p "$build/lib-classes/$name"
+    (cd "$build/lib-classes/$name" && unzip -q -o "$jar")
+  done
+fi
+
+# Compile app resources + each library's resources separately
+res_zips=("$build/app-res.zip")
+run_tool "$bt/aapt2" compile --dir "$root/res" -o "$build/app-res.zip"
+for d in "$build"/lib-res/*/; do
+  [ -d "$d/res" ] || continue
+  name="$(basename "$d")"
+  if [ -n "$(ls -A "$d/res" 2>/dev/null)" ]; then
+    run_tool "$bt/aapt2" compile --dir "$d/res" -o "$build/$name-res.zip" 2>/dev/null || true
+    [ -f "$build/$name-res.zip" ] && res_zips+=("$build/$name-res.zip")
+  fi
+done
 
 echo "[1/7] Compiling resources..."
-run_tool "$bt/aapt2" compile --dir "$root/res" -o "$build/res.zip"
 
 echo "[2/7] Linking resources..."
 run_tool "$bt/aapt2" link \
@@ -117,18 +153,40 @@ run_tool "$bt/aapt2" link \
   --target-sdk-version 34 \
   --version-code "$version_code" \
   --version-name "$version_name" \
-  "$build/res.zip"
+  --extra-packages "androidx.core" \
+  --extra-packages "androidx.exifinterface" \
+  --extra-packages "androidx.media3.common" \
+  --extra-packages "androidx.media3.container" \
+  --extra-packages "androidx.media3.database" \
+  --extra-packages "androidx.media3.datasource" \
+  --extra-packages "androidx.media3.decoder" \
+  --extra-packages "androidx.media3.exoplayer" \
+  --extra-packages "androidx.media3.exoplayer.hls" \
+  --extra-packages "androidx.media3.extractor" \
+  --extra-packages "androidx.media3.ui" \
+  "${res_zips[@]}"
 
 echo "[3/7] Compiling Java..."
 mapfile -t sources < <(find "$root/java" -name '*.java')
 mapfile -t generated < <(find "$build/gen" -name 'R.java')
-"$javac_bin" -source 8 -target 8 -Xlint:-options \
-  -classpath "$android_jar" -d "$build/classes" "${sources[@]}" "${generated[@]}"
+# Build classpath including all library classes
+cp="$android_jar"
+for d in "$build"/lib-classes/*/; do
+  [ -d "$d" ] && cp="$cp:$d"
+done
+"$javac_bin" -source 8 -target 8 -Xlint:-options -Xlint:-deprecation \
+  -classpath "$cp" -d "$build/classes" "${sources[@]}" "${generated[@]}"
 
 echo "[4/7] Dexing..."
-mapfile -t classes < <(find "$build/classes" -name '*.class')
+# Collect all classes (app + libraries)
+all_classes=()
+while IFS= read -r -d '' f; do all_classes+=("$f"); done < <(find "$build/classes" -name '*.class' -print0)
+for d in "$build"/lib-classes/*/; do
+  [ -d "$d" ] || continue
+  while IFS= read -r -d '' f; do all_classes+=("$f"); done < <(find "$d" -name '*.class' -print0)
+done
 "$java_bin" -cp "$bt/lib/d8.jar" com.android.tools.r8.D8 \
-  --lib "$android_jar" --min-api 23 --output "$build/dex" "${classes[@]}"
+  --lib "$android_jar" --min-api 23 --output "$build/dex" "${all_classes[@]}"
 
 echo "[5/7] Packaging assets + classes.dex..."
 cp "$build/base.apk" "$build/unsigned.apk"
