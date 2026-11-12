@@ -983,12 +983,15 @@ public class PlayerActivity extends Activity {
                         "var s=document.getElementById('pip-style');" +
                         "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
                         "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
-                        "'video{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;}' +" +
-                        "'*:not(video):not(html):not(body){display:none!important;}';" +
+                        "'video,iframe{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;}' +" +
+                        "'*:not(video):not(iframe):not(html):not(body){display:none!important;}';" +
                         "var v=document.querySelector('video');" +
                         "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                        "var f=document.querySelector('iframe');" +
+                        "if(f&&f.parentElement!==document.body){document.body.appendChild(f);}" +
                         "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
                         "var v2=document.querySelector('video');if(v2&&v2.parentElement!==document.body)document.body.appendChild(v2);" +
+                        "var f2=document.querySelector('iframe');if(f2&&f2.parentElement!==document.body)document.body.appendChild(f2);" +
                         "});window.__pipObs.observe(document.body,{childList:true,subtree:true});}" +
                         "}catch(e){}})();",
                         null);
@@ -1181,12 +1184,15 @@ public class PlayerActivity extends Activity {
                         "var s=document.getElementById('pip-style');" +
                         "if(!s){s=document.createElement('style');s.id='pip-style';document.head.appendChild(s);}" +
                         "s.textContent='html,body{margin:0!important;padding:0!important;overflow:hidden!important;width:100%!important;height:100%!important;}' +" +
-                        "'video{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;}' +" +
-                        "'*:not(video):not(html):not(body){display:none!important;}';" +
+                        "'video,iframe{position:fixed!important;top:0!important;left:0!important;width:100%!important;height:100%!important;object-fit:contain!important;z-index:2147483647!important;border:none!important;}' +" +
+                        "'*:not(video):not(iframe):not(html):not(body){display:none!important;}';" +
                         "var v=document.querySelector('video');" +
                         "if(v&&v.parentElement!==document.body){document.body.appendChild(v);}" +
+                        "var f=document.querySelector('iframe');" +
+                        "if(f&&f.parentElement!==document.body){document.body.appendChild(f);}" +
                         "if(!window.__pipObs){window.__pipObs=new MutationObserver(function(){" +
                         "var v2=document.querySelector('video');if(v2&&v2.parentElement!==document.body)document.body.appendChild(v2);" +
+                        "var f2=document.querySelector('iframe');if(f2&&f2.parentElement!==document.body)document.body.appendChild(f2);" +
                         "});window.__pipObs.observe(document.body,{childList:true,subtree:true});}" +
                         "}catch(e){}})();",
                         null);
