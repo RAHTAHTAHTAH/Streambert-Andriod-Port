@@ -33,14 +33,14 @@ public class BridgeTrakt {
     private static final String KEY_USER_CODE = "user_code";
     private static final String KEY_VERIFICATION_URL = "verification_url";
 
-    private final MainActivity activity;
+    private final Context context;
 
-    public BridgeTrakt(MainActivity activity) {
-        this.activity = activity;
+    public BridgeTrakt(Context context) {
+        this.context = context;
     }
 
     private SharedPreferences prefs() {
-        return activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
+        return context.getSharedPreferences(PREFS, Context.MODE_PRIVATE);
     }
 
     @android.webkit.JavascriptInterface

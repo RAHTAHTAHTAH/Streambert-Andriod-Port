@@ -48,6 +48,7 @@ public class ExoPlayerActivity extends Activity {
     private float currentBrightness = -1f; // -1 = system default
     private long lastTapTime = 0;
     private int tapCount = 0;
+    private String mediaTitle = null;
 
     // Overlay for gesture feedback
     private TextView gestureOverlay;
@@ -60,6 +61,7 @@ public class ExoPlayerActivity extends Activity {
         String url = intent == null ? null : intent.getStringExtra(EXTRA_URL);
         streamUrl = url;
         String title = intent == null ? null : intent.getStringExtra(EXTRA_TITLE);
+        mediaTitle = title;
 
         if (url == null || url.isEmpty()) {
             Toast.makeText(this, "No stream to play", Toast.LENGTH_SHORT).show();
@@ -151,6 +153,13 @@ public class ExoPlayerActivity extends Activity {
 
         if (title != null && !title.isEmpty()) {
             setTitle(title);
+            // Best-effort Trakt scrobble (start)
+            try {
+                BridgeTrakt trakt = new BridgeTrakt(this);
+                if (trakt.isAuthorized()) {
+                    trakt.scrobble("start", "movie", title, 0, "", 0, 0, 0);
+                }
+            } catch (Exception ignored) { }
         }
 
         // Set up gesture detection
@@ -288,6 +297,15 @@ public class ExoPlayerActivity extends Activity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        // Best-effort Trakt scrobble (stop)
+        if (mediaTitle != null && !mediaTitle.isEmpty()) {
+            try {
+                BridgeTrakt trakt = new BridgeTrakt(this);
+                if (trakt.isAuthorized()) {
+                    trakt.scrobble("stop", "movie", mediaTitle, 0, "", 0, 0, 100);
+                }
+            } catch (Exception ignored) { }
+        }
         if (player != null) {
             player.release();
             player = null;
