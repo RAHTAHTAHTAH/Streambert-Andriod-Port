@@ -1226,14 +1226,22 @@ public class PlayerActivity extends Activity {
             // Restore when leaving PiP.
             if (topBar != null) setTopBarVisible(false);
             if (web != null) {
-                web.evaluateJavascript(
-                        "(function(){try{" +
-                        "var s=document.getElementById('pip-style');if(s)s.remove();" +
-                        "var vs=document.querySelectorAll('video,iframe');" +
-                        "for(var i=0;i<vs.length;i++){vs[i].style.cssText='';}" +
-                        "if(window.__pipObs){window.__pipObs.disconnect();window.__pipObs=null;}" +
-                        "}catch(e){}})();",
-                        null);
+                // Navigate back to original page if we navigated to an embed URL.
+                String currentUrl = web.getUrl();
+                if (currentUrl != null && !currentUrl.equals(pageUrl) && pageUrl != null) {
+                    Map<String, String> headers = new HashMap<>();
+                    headers.put("Referer", referer);
+                    web.loadUrl(pageUrl, headers);
+                } else {
+                    web.evaluateJavascript(
+                            "(function(){try{" +
+                            "var s=document.getElementById('pip-style');if(s)s.remove();" +
+                            "var vs=document.querySelectorAll('video,iframe');" +
+                            "for(var i=0;i<vs.length;i++){vs[i].style.cssText='';}" +
+                            "if(window.__pipObs){window.__pipObs.disconnect();window.__pipObs=null;}" +
+                            "}catch(e){}})();",
+                            null);
+                }
             }
             hideSystemUi();
         }
