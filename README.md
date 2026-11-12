@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `1.0.4`, versionCode 28) that reuses the Streambert React
+(version `1.0.5`, versionCode 29) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -69,6 +69,21 @@ Core browsing & playback
 - Full-screen native player (tap to reveal controls, auto-hide after 3.5 s)
 - Native ExoPlayer (Media3) for direct streams and downloaded files: hardware
   decoding, HLS/DASH support, native subtitle track switching
+- Touch gesture controls in the player: left-side vertical swipe for brightness,
+  right-side vertical swipe for volume, double-tap to seek ±10 s, double-tap
+  center to toggle play/pause
+- MediaMuxer remuxing: downloaded HLS streams are automatically remuxed into
+  standard, universally seekable MP4 files using Android's built-in
+  MediaExtractor + MediaMuxer (no external libraries)
+- External player support: "Open With" button sends the stream URL or local
+  download to VLC, MX Player, MPV, etc. via Intent.ACTION_VIEW
+- External subtitle picker: load .srt/.vtt/.ass/.ssa files from device storage
+  via Android's Storage Access Framework (ACTION_OPEN_DOCUMENT)
+- Smart download constraints: "Download on Wi-Fi only" toggle and storage space
+  check before queuing large seasons
+- App shortcuts: long-press the app icon for Search and Downloads shortcuts
+- Share sheet: receive IMDb/TMDB links shared from other apps
+- Automated GitHub Actions release pipeline (build, sign, publish on tag push)
 - Ad blocking in the player WebView
 - Watched threshold / auto-mark watched
 - Autoplay next episode with countdown and overlay position
@@ -196,8 +211,8 @@ Features that are limited or unavailable on Android:
 - Some hosters that require a desktop browser environment
 
 Known limitations:
-- HLS downloads are saved as fragmented MP4 (`.mp4`) or MPEG-TS (`.m2ts`); very old players may not handle them.
 - HEVC-only streams depend on device decoder support for in-app playback.
+- Very old players may not handle all container formats even after remuxing.
 
 ---
 
@@ -263,7 +278,8 @@ that instead of starting a doomed install.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
-- `1.0.4` (25) — secrets at rest: AES-256-GCM encryption of the TMDB and GitHub tokens with an Android Keystore key, parental PIN and recovery code stored as salted PBKDF2 hashes, transparent migration of old plaintext values
+- `1.0.5` (29) — ExoPlayer (Media3) integration, touch gesture controls, MediaMuxer remuxing, external player intent, external subtitle picker (SAF), smart download constraints (Wi-Fi only + storage check), app shortcuts + share sheet, automated GitHub Actions releases
+- `1.0.4` (28) — secrets at rest: AES-256-GCM encryption of the TMDB and GitHub tokens with an Android Keystore key, parental PIN and recovery code stored as salted PBKDF2 hashes, transparent migration of old plaintext values
 - `1.0.3` (24) — cryptographic update integrity: SHA-256 digest verification of every download, HTTPS-only release URLs, fail-closed signing-key checks
 - `1.0.2` (23) — first build under the `1.0.x` numbering used by the GitHub releases; contains the built-in updater and the low-end performance work
 - `2.11.0-mobile` (22) — smoother on low-end devices: immutable asset caching, cheap rendering profile, memory-pressure handling
