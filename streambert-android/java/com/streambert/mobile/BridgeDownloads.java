@@ -92,6 +92,34 @@ public class BridgeDownloads {
     }
 
     @android.webkit.JavascriptInterface
+    public void openExternal(String path) {
+        Uri uri;
+        try {
+            uri = DownloadIndex.uriFor(activity, path);
+        } catch (Exception e) {
+            uri = null;
+        }
+        if (uri == null) {
+            activity.runOnUiThread(() -> Toast.makeText(activity,
+                    "File not found", Toast.LENGTH_SHORT).show());
+            return;
+        }
+        final Uri finalUri = uri;
+        activity.runOnUiThread(() -> {
+            try {
+                Intent i = new Intent(Intent.ACTION_VIEW);
+                i.setDataAndType(finalUri, DownloadIndex.mimeForPath(path));
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
+                        | Intent.FLAG_ACTIVITY_NEW_TASK);
+                activity.startActivity(Intent.createChooser(i, "Open with"));
+            } catch (Exception e) {
+                Toast.makeText(activity, "No external player found",
+                        Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    @android.webkit.JavascriptInterface
     public boolean openPath(String path) {
         Uri uri;
         try {

@@ -428,11 +428,17 @@ public class PlayerActivity extends Activity {
         exoBtn.setContentDescription("Play in ExoPlayer");
         exoBtn.setOnClickListener(v -> openInExoPlayer());
 
+        TextView extBtn = makeButton("\u2197");
+        extBtn.setTextSize(14);
+        extBtn.setContentDescription("Open in external player");
+        extBtn.setOnClickListener(v -> openInExternalPlayer());
+
         topBar.addView(close, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(titleView);
         topBar.addView(downloadBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(browserBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
         topBar.addView(exoBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
+        topBar.addView(extBtn, new LinearLayout.LayoutParams(dp(40), dp(40)));
 
         FrameLayout.LayoutParams topParams = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -953,6 +959,26 @@ public class PlayerActivity extends Activity {
             startActivity(i);
         } catch (Exception e) {
             toast("Could not open ExoPlayer");
+        }
+    }
+
+    private void openInExternalPlayer() {
+        String url = lastMediaUrl != null ? lastMediaUrl : pageUrl;
+        if (url == null || url.isEmpty()) {
+            toast("No stream available");
+            return;
+        }
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setDataAndType(Uri.parse(url), "video/*");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            // Try to grant read permission for local content URIs
+            if (url.startsWith("content://")) {
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
+            startActivity(Intent.createChooser(i, "Open with"));
+        } catch (Exception e) {
+            toast("No external player found");
         }
     }
 

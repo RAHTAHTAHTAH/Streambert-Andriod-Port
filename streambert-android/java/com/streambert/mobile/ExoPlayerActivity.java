@@ -38,6 +38,7 @@ public class ExoPlayerActivity extends Activity {
 
     private ExoPlayer player;
     private PlayerView playerView;
+    private String streamUrl;
 
     private GestureDetector gestureDetector;
     private AudioManager audioManager;
@@ -55,6 +56,7 @@ public class ExoPlayerActivity extends Activity {
 
         Intent intent = getIntent();
         String url = intent == null ? null : intent.getStringExtra(EXTRA_URL);
+        streamUrl = url;
         String title = intent == null ? null : intent.getStringExtra(EXTRA_TITLE);
 
         if (url == null || url.isEmpty()) {
@@ -73,6 +75,22 @@ public class ExoPlayerActivity extends Activity {
         root.addView(playerView, new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.MATCH_PARENT));
+
+        // External player button (top-right)
+        TextView extBtn = new TextView(this);
+        extBtn.setText("\u2197");
+        extBtn.setTextSize(20);
+        extBtn.setTextColor(0xFFFFFFFF);
+        extBtn.setPadding(16, 8, 16, 8);
+        extBtn.setBackgroundColor(0x66000000);
+        extBtn.setOnClickListener(v -> openInExternalPlayer());
+        FrameLayout.LayoutParams extParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        extParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        extParams.topMargin = 16;
+        extParams.rightMargin = 16;
+        root.addView(extBtn, extParams);
 
         // Gesture feedback overlay
         gestureOverlay = new TextView(this);
@@ -255,6 +273,24 @@ public class ExoPlayerActivity extends Activity {
         if (player != null) {
             player.release();
             player = null;
+        }
+    }
+
+    private void openInExternalPlayer() {
+        if (streamUrl == null || streamUrl.isEmpty()) {
+            Toast.makeText(this, "No stream available", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            Intent i = new Intent(Intent.ACTION_VIEW);
+            i.setDataAndType(Uri.parse(streamUrl), "video/*");
+            i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (streamUrl.startsWith("content://")) {
+                i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
+            startActivity(Intent.createChooser(i, "Open with"));
+        } catch (Exception e) {
+            Toast.makeText(this, "No external player found", Toast.LENGTH_SHORT).show();
         }
     }
 
