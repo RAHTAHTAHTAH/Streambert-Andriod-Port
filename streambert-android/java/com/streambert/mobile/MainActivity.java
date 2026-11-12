@@ -243,6 +243,41 @@ public class MainActivity extends Activity {
         } else {
             web.loadUrl("https://" + APP_HOST + "/index.html");
         }
+
+        handleIntent(getIntent());
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private void handleIntent(Intent intent) {
+        if (intent == null) return;
+        String action = intent.getAction();
+        Uri data = intent.getData();
+
+        // Shortcut deep links
+        if (data != null && "streambert".equals(data.getScheme())) {
+            String host = data.getHost();
+            if ("search".equals(host)) {
+                web.loadUrl("https://" + APP_HOST + "/index.html#/search");
+            } else if ("downloads".equals(host)) {
+                web.loadUrl("https://" + APP_HOST + "/index.html#/downloads");
+            }
+            return;
+        }
+
+        // Share sheet: receive IMDb/TMDB links or text
+        if (Intent.ACTION_SEND.equals(action) && "text/plain".equals(intent.getType())) {
+            String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
+            if (sharedText != null && !sharedText.trim().isEmpty()) {
+                String encoded = android.net.Uri.encode(sharedText.trim());
+                web.loadUrl("https://" + APP_HOST + "/index.html?shared=" + encoded);
+            }
+        }
     }
 
     private boolean handleNavigation(Uri uri) {
