@@ -88,6 +88,7 @@ Core browsing & playback
 - Watched threshold / auto-mark watched
 - Autoplay next episode with countdown and overlay position
 - Anime streaming via native HiAnime resolver (HttpURLConnection-based scraper, no WebView CORS limits): searches HiAnime, resolves episodes and extracts stream URLs
+- Trakt.tv scrobbling: OAuth device-code flow + scrobble start/pause/stop and history sync, wired into native ExoPlayer; bridge methods exposed to renderer
 - Anime intro skip via AniSkip (HiAnime source)
 - Trailer playback via Invidious (privacy-friendly YouTube frontend, with fallback instances)
 
