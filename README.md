@@ -1,7 +1,7 @@
 # Streambert Mobile (Android)
 
 Android port of the Streambert desktop app. Built as an installable APK
-(version `1.0.5`, versionCode 29) that reuses the Streambert React
+(version `1.0.6`, versionCode 30) that reuses the Streambert React
 renderer inside a native Android WebView, with a native full-screen player and
 a native HLS download service.
 
@@ -278,6 +278,7 @@ that instead of starting a doomed install.
 - Downloads land in `Download/Streambert/` and are indexed in MediaStore
 
 ## Version history
+- `1.0.6` (30) — Native HiAnime resolver (HttpURLConnection-based scraper, no WebView CORS limits): searches HiAnime, resolves episodes, extracts stream URLs; brings anime streaming to full parity with desktop
 - `1.0.5` (29) — ExoPlayer (Media3) integration, touch gesture controls, MediaMuxer remuxing, external player intent, external subtitle picker (SAF), smart download constraints (Wi-Fi only + storage check), app shortcuts + share sheet, automated GitHub Actions releases
 - `1.0.4` (28) — secrets at rest: AES-256-GCM encryption of the TMDB and GitHub tokens with an Android Keystore key, parental PIN and recovery code stored as salted PBKDF2 hashes, transparent migration of old plaintext values
 - `1.0.3` (24) — cryptographic update integrity: SHA-256 digest verification of every download, HTTPS-only release URLs, fail-closed signing-key checks
