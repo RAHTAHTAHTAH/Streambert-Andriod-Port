@@ -65,15 +65,13 @@
             android:exported="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
-            android:supportsPictureInPicture="true"
-            android:resizeableActivity="true" />
+            android:screenOrientation="sensorLandscape" />
 
         <activity
             android:name=".VideoPlayerActivity"
             android:exported="false"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout|keyboardHidden|uiMode"
             android:theme="@android:style/Theme.Material.NoActionBar.Fullscreen"
-            android:supportsPictureInPicture="true"
-            android:resizeableActivity="true" />
+            android:screenOrientation="sensorLandscape" />
     </application>
 </manifest>

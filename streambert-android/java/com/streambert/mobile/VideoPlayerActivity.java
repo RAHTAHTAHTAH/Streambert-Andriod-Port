@@ -1,28 +1,17 @@
 package com.streambert.mobile;
 
 import android.app.Activity;
-import android.app.PendingIntent;
-import android.app.PictureInPictureParams;
-import android.app.RemoteAction;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.graphics.drawable.Icon;
 import android.media.MediaPlayer;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Rational;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.MediaController;
 import android.widget.Toast;
 import android.widget.VideoView;
 
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Simple in-app player for downloaded files. Uses the framework MediaPlayer
@@ -37,10 +26,6 @@ public class VideoPlayerActivity extends Activity {
 
     private VideoView videoView;
     private MediaController mediaController;
-
-    private static final String ACTION_PIP_PLAY = "com.streambert.mobile.PIP_PLAY";
-    private static final String ACTION_PIP_PAUSE = "com.streambert.mobile.PIP_PAUSE";
-    private BroadcastReceiver pipReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -107,7 +92,6 @@ public class VideoPlayerActivity extends Activity {
                     }
                 }
                 videoView.start();
-                updatePipParams();
             }
         });
         videoView.setOnErrorListener(new MediaPlayer.OnErrorListener() {
@@ -119,115 +103,14 @@ public class VideoPlayerActivity extends Activity {
             }
         });
 
-        // Register PiP action receiver.
-        pipReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                if (intent == null || videoView == null) return;
-                String action = intent.getAction();
-                if (ACTION_PIP_PLAY.equals(action)) {
-                    videoView.start();
-                    updatePipParams();
-                } else if (ACTION_PIP_PAUSE.equals(action)) {
-                    if (videoView.isPlaying()) videoView.pause();
-                    updatePipParams();
-                }
-            }
-        };
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(ACTION_PIP_PLAY);
-        filter.addAction(ACTION_PIP_PAUSE);
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                registerReceiver(pipReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-            } else {
-                registerReceiver(pipReceiver, filter);
-            }
-        } catch (Exception e) {
-            Log.w("StreambertPlayer", "Could not register PiP receiver", e);
-        }
-
         if (title != null && !title.isEmpty()) {
             setTitle(title);
         }
     }
 
     @Override
-    public void onUserLeaveHint() {
-        super.onUserLeaveHint();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                && videoView != null && !isFinishing()) {
-            try {
-                updatePipParams();
-                enterPictureInPictureMode(buildPipParams());
-            } catch (Exception ignored) {
-            }
-        }
-    }
-
-    private PictureInPictureParams buildPipParams() {
-        PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder()
-                .setAspectRatio(new Rational(16, 9));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            try {
-                boolean playing = videoView != null && videoView.isPlaying();
-                List<RemoteAction> actions = new ArrayList<>();
-                Intent intent = new Intent(playing ? ACTION_PIP_PAUSE : ACTION_PIP_PLAY);
-                PendingIntent pending = PendingIntent.getBroadcast(
-                        this, 0, intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-                RemoteAction action = new RemoteAction(
-                        Icon.createWithResource(this,
-                                playing ? android.R.drawable.ic_media_pause
-                                        : android.R.drawable.ic_media_play),
-                        playing ? "Pause" : "Play",
-                        playing ? "Pause playback" : "Play playback",
-                        pending);
-                actions.add(action);
-                builder.setActions(actions);
-            } catch (Exception ignored) {
-            }
-        }
-        return builder.build();
-    }
-
-    private void updatePipParams() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return;
-        try {
-            setPictureInPictureParams(buildPipParams());
-        } catch (Exception ignored) {
-        }
-    }
-
-    @Override
-    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode,
-                                             android.content.res.Configuration newConfig) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
-        if (isInPictureInPictureMode) {
-            // Ensure the VideoView fills the PiP window.
-            if (videoView != null) {
-                videoView.setLayoutParams(new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT));
-                videoView.requestLayout();
-            }
-            if (mediaController != null) mediaController.hide();
-        } else {
-            if (videoView != null) {
-                videoView.setLayoutParams(new FrameLayout.LayoutParams(
-                        FrameLayout.LayoutParams.MATCH_PARENT,
-                        FrameLayout.LayoutParams.MATCH_PARENT));
-                videoView.requestLayout();
-            }
-        }
-        updatePipParams();
-    }
-
-    @Override
     protected void onPause() {
         super.onPause();
-        // Don't pause if in PiP mode.
-        if (isInPictureInPictureMode()) return;
         if (videoView != null && videoView.isPlaying()) videoView.pause();
     }
 
@@ -239,10 +122,6 @@ public class VideoPlayerActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        if (pipReceiver != null) {
-            try { unregisterReceiver(pipReceiver); } catch (Exception ignored) {}
-            pipReceiver = null;
-        }
         super.onDestroy();
     }
 }
