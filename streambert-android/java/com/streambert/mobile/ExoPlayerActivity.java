@@ -18,10 +18,12 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.media3.common.C;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.MimeTypes;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.ui.PlayerView;
+import androidx.media3.ui.TrackSelectionDialogBuilder;
 
 /**
  * Native Media3 (ExoPlayer) player for direct .m3u8 / .mp4 streams and
@@ -109,8 +111,24 @@ public class ExoPlayerActivity extends Activity {
                 ViewGroup.LayoutParams.WRAP_CONTENT);
         subParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
         subParams.topMargin = 16;
-        subParams.rightMargin = 120;
+        subParams.rightMargin = 170;
         root.addView(subBtn, subParams);
+
+        // Embedded audio/subtitle track selector (top-right, left of CC)
+        TextView tracksBtn = new TextView(this);
+        tracksBtn.setText("\u2630");
+        tracksBtn.setTextSize(16);
+        tracksBtn.setTextColor(0xFFFFFFFF);
+        tracksBtn.setPadding(16, 8, 16, 8);
+        tracksBtn.setBackgroundColor(0x66000000);
+        tracksBtn.setOnClickListener(v -> showTrackSelection());
+        FrameLayout.LayoutParams tracksParams = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT);
+        tracksParams.gravity = android.view.Gravity.TOP | android.view.Gravity.END;
+        tracksParams.topMargin = 16;
+        tracksParams.rightMargin = 220;
+        root.addView(tracksBtn, tracksParams);
 
         // Gesture feedback overlay
         gestureOverlay = new TextView(this);
@@ -309,6 +327,19 @@ public class ExoPlayerActivity extends Activity {
         if (player != null) {
             player.release();
             player = null;
+        }
+    }
+
+    private void showTrackSelection() {
+        if (player == null) return;
+        try {
+            TrackSelectionDialogBuilder builder = new TrackSelectionDialogBuilder(
+                    this, "Tracks", player,
+                    C.TRACK_TYPE_AUDIO | C.TRACK_TYPE_TEXT | C.TRACK_TYPE_VIDEO);
+            builder.setShowDisableOption(true);
+            builder.build().show();
+        } catch (Exception e) {
+            Toast.makeText(this, "No tracks available", Toast.LENGTH_SHORT).show();
         }
     }
 
