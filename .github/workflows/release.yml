@@ -56,12 +56,24 @@ jobs:
         env:
           ANDROID_HOME: ${{ env.ANDROID_HOME }}
           JAVA_HOME: ${{ env.JAVA_HOME }}
-          RELEASE_KEYSTORE_PATH: streambert-android/streambert-release.keystore
-          RELEASE_KEYSTORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
         run: |
           cd streambert-android
-          chmod +x build.sh
-          ./build.sh
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew 2>/dev/null || true
+          gradle assembleRelease --no-daemon
+          # Sign with release keystore
+          KS=streambert-release.keystore
+          if [ -n "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" ]; then
+            echo "${{ secrets.RELEASE_KEYSTORE_BASE64 }}" | base64 -d > $KS
+          fi
+          KS_PASS="${{ secrets.RELEASE_KEYSTORE_PASSWORD }}"
+          [ -z "$KS_PASS" ] && KS_PASS="streambert-release"
+          BT=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+          java -jar $ANDROID_HOME/build-tools/$BT/lib/apksigner.jar sign \
+            --ks $KS --ks-pass pass:$KS_PASS --key-pass pass:$KS_PASS \
+            --ks-key-alias streambert \
+            --out Streambert-Mobile.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Verify APK
         run: |
