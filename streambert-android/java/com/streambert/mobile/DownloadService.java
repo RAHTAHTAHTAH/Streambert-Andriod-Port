@@ -276,26 +276,74 @@ public class DownloadService extends Service {
             out.close();
             out = null;
 
-            String extension = HlsDownloader.extensionFor(result.mp4);
-            String mime = HlsDownloader.mimeFor(result.mp4);
-            String finalName = baseName + extension;
+            // Remux the downloaded file through MediaMuxer to produce a
+            // standard, universally seekable MP4. Falls back to the raw
+            // file if remuxing fails.
+            boolean remuxed = false;
+            String finalName;
+            String mime;
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                ContentValues values = new ContentValues();
-                values.put(MediaStore.MediaColumns.DISPLAY_NAME, finalName);
-                values.put(MediaStore.MediaColumns.MIME_TYPE, mime);
-                values.put(MediaStore.MediaColumns.IS_PENDING, 0);
-                getContentResolver().update(mediaUri, values, null, null);
-            } else {
-                File destination = new File(tempFile.getParentFile(), finalName);
-                if (!tempFile.renameTo(destination)) {
-                    throw new IOException("Could not finalise the download");
+                // Create a new MediaStore entry for the remuxed MP4.
+                ContentValues mp4Values = new ContentValues();
+                mp4Values.put(MediaStore.MediaColumns.DISPLAY_NAME, baseName + ".mp4");
+                mp4Values.put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4");
+                mp4Values.put(MediaStore.MediaColumns.RELATIVE_PATH,
+                        Environment.DIRECTORY_DOWNLOADS + "/Streambert");
+                mp4Values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                Uri mp4Uri = getContentResolver()
+                        .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, mp4Values);
+
+                if (mp4Uri != null) {
+                    remuxed = MediaRemuxer.remux(getContentResolver(), mediaUri, mp4Uri);
                 }
-                // Make the file visible to MediaStore so the Downloads page can
-                // open it with a content:// URI on Android 7-9.
-                MediaScannerConnection.scanFile(this,
-                        new String[]{destination.getAbsolutePath()},
-                        new String[]{mime}, null);
+
+                if (remuxed) {
+                    // Delete the raw .part file; finalise the MP4.
+                    try { getContentResolver().delete(mediaUri, null, null); } catch (Exception ignored) { }
+                    ContentValues finalize = new ContentValues();
+                    finalize.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    getContentResolver().update(mp4Uri, finalize, null, null);
+                    finalName = baseName + ".mp4";
+                    mime = "video/mp4";
+                } else {
+                    // Fall back: rename .part to the original extension.
+                    String extension = HlsDownloader.extensionFor(result.mp4);
+                    mime = HlsDownloader.mimeFor(result.mp4);
+                    finalName = baseName + extension;
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, finalName);
+                    values.put(MediaStore.MediaColumns.MIME_TYPE, mime);
+                    values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                    getContentResolver().update(mediaUri, values, null, null);
+                    if (mp4Uri != null) {
+                        try { getContentResolver().delete(mp4Uri, null, null); } catch (Exception ignored) { }
+                    }
+                }
+            } else {
+                // Pre-Android 10: remux on disk.
+                File mp4File = new File(tempFile.getParentFile(), baseName + ".mp4");
+                remuxed = MediaRemuxer.remux(tempFile, mp4File);
+                if (remuxed) {
+                    //noinspection ResultOfMethodCallIgnored
+                    tempFile.delete();
+                    finalName = baseName + ".mp4";
+                    mime = "video/mp4";
+                    MediaScannerConnection.scanFile(this,
+                            new String[]{mp4File.getAbsolutePath()},
+                            new String[]{mime}, null);
+                } else {
+                    String extension = HlsDownloader.extensionFor(result.mp4);
+                    mime = HlsDownloader.mimeFor(result.mp4);
+                    finalName = baseName + extension;
+                    File destination = new File(tempFile.getParentFile(), finalName);
+                    if (!tempFile.renameTo(destination)) {
+                        throw new IOException("Could not finalise the download");
+                    }
+                    MediaScannerConnection.scanFile(this,
+                            new String[]{destination.getAbsolutePath()},
+                            new String[]{mime}, null);
+                }
             }
 
             notifyDone(position + finalName, result.bytes);

@@ -1,0 +1,3 @@
+# Build intermediates
+streambert-android/build/
+*.apk
