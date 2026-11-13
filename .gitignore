@@ -4,3 +4,6 @@ streambert-android/.gradle/
 streambert-android/app/build/
 streambert-android/local.properties
 *.apk
+# Keystores - never commit signing keys
+*.keystore
+*.jks
