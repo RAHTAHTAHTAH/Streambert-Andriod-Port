@@ -37,7 +37,7 @@ public class BridgeCore {
 
     @android.webkit.JavascriptInterface
     public void openUrl(final String url) {
-        if (url == null) return;
+        if (url == null || !isAppOrigin(url)) return;
         Uri uri = Uri.parse(url);
         String scheme = uri.getScheme();
         if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) return;
@@ -49,6 +49,12 @@ public class BridgeCore {
             } catch (Exception ignored) {
             }
         });
+    }
+
+    private static boolean isAppOrigin(String url) {
+        if (url == null) return false;
+        String u = url.trim();
+        return u.startsWith("https://streambert.local") || u.startsWith("http://streambert.local");
     }
 
     @android.webkit.JavascriptInterface

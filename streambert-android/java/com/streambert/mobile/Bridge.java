@@ -54,12 +54,19 @@ public class Bridge {
     // -- player -----------------------------------------------------------
     @android.webkit.JavascriptInterface
     public void openPlayer(String url, String userAgent, String title) {
+        if (!isAppOrigin(url)) return;
         player.openPlayer(url, userAgent, title);
     }
 
     // -- downloads --------------------------------------------------------
     @android.webkit.JavascriptInterface
     public String listDownloads() { return downloads.listDownloads(); }
+
+    private static boolean isAppOrigin(String url) {
+        if (url == null) return false;
+        String u = url.trim();
+        return u.startsWith("https://streambert.local") || u.startsWith("http://streambert.local");
+    }
     @android.webkit.JavascriptInterface
     public boolean deleteDownload(String filePath) { return downloads.deleteDownload(filePath); }
     @android.webkit.JavascriptInterface
@@ -106,10 +113,6 @@ public class Bridge {
     // -- subtitles --------------------------------------------------------
     @android.webkit.JavascriptInterface
     public void setOpenSubtitlesApiKey(String key) { subtitles.setOpenSubtitlesApiKey(key); }
-    @android.webkit.JavascriptInterface
-    public String getOpenSubtitlesApiKey() { return subtitles.getOpenSubtitlesApiKey(); }
-    @android.webkit.JavascriptInterface
-    public boolean hasOpenSubtitlesApiKey() { return subtitles.hasOpenSubtitlesApiKey(); }
     @android.webkit.JavascriptInterface
     public String searchSubtitles(String query, String language) { return subtitles.searchSubtitles(query, language); }
     @android.webkit.JavascriptInterface

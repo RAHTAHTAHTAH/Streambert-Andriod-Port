@@ -64,16 +64,6 @@ public class BridgeSubtitles {
     }
 
     @android.webkit.JavascriptInterface
-    public String getOpenSubtitlesApiKey() {
-        String key = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-                .getString(KEY_API_KEY, "");
-        if (key.isEmpty()) return "";
-        // Return a masked version so the UI can show it is configured.
-        if (key.length() <= 8) return "****";
-        return key.substring(0, 4) + "..." + key.substring(key.length() - 4);
-    }
-
-    @android.webkit.JavascriptInterface
     public boolean hasOpenSubtitlesApiKey() {
         String key = activity.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
                 .getString(KEY_API_KEY, "");

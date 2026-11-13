@@ -101,6 +101,12 @@ public class BridgeDownloads {
         });
     }
 
+    private static boolean isAppOrigin(String url) {
+        if (url == null) return false;
+        String u = url.trim();
+        return u.startsWith("https://streambert.local") || u.startsWith("http://streambert.local");
+    }
+
     @android.webkit.JavascriptInterface
     public void openExternal(String path) {
         Uri uri;

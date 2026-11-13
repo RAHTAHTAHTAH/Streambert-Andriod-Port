@@ -40,13 +40,16 @@ public class BridgeAnime {
 
     @android.webkit.JavascriptInterface
     public String resolveHiAnime(String paramsJson) {
+        if (paramsJson == null || !paramsJson.startsWith("{") || !paramsJson.endsWith("}")) {
+            return "{\"ok\":false,\"error\":\"invalid_request\"}";
+        }
         String title = "";
         int seasonNumber = 1;
         int episodeNumber = 1;
         boolean isMovie = false;
         String translationType = "sub";
         try {
-            JSONObject p = new JSONObject(paramsJson == null ? "{}" : paramsJson);
+            JSONObject p = new JSONObject(paramsJson);
             title = p.optString("title", "");
             seasonNumber = p.optInt("seasonNumber", 1);
             episodeNumber = p.optInt("episodeNumber", 1);

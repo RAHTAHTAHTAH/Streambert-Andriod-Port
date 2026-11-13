@@ -58,6 +58,13 @@ dependencies {
     implementation 'androidx.annotation:annotation:1.7.0'
     implementation 'androidx.collection:collection:1.3.0'
     implementation 'androidx.exifinterface:exifinterface:1.3.6'
+}
 
-    // Local AARs/JARs (none needed now; all deps via Maven)
+android {
+    lint {
+        checkReleaseBuilds false
+        checkAllWarnings false
+        baseline = file("lint-baseline.xml")
+        abortOnError true
+    }
 }

@@ -84,7 +84,12 @@ final class DownloadIndex {
 
         static List<Entry> list(Context ctx) {
             List<Entry> entries = new ArrayList<>();
-            Uri collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI;
+            Uri collection;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                collection = MediaStore.Downloads.EXTERNAL_CONTENT_URI;
+            } else {
+                return entries;
+            }
             String[] projection = {
                     MediaStore.Downloads._ID,
                     MediaStore.Downloads.DISPLAY_NAME,

@@ -942,6 +942,12 @@ public class PlayerActivity extends Activity {
         }
     }
 
+    private boolean isAppOrigin(String url) {
+        if (url == null) return false;
+        String u = url.trim();
+        return u.startsWith("https://streambert.local") || u.startsWith("http://streambert.local");
+    }
+
     /** HLS needs a segment downloader; run it in a foreground service. */
     private void startHlsDownload(String url) {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P
@@ -958,6 +964,10 @@ public class PlayerActivity extends Activity {
         }
 
                 try {
+            if (!isAppOrigin(url)) {
+                toast("Invalid stream source.");
+                return;
+            }
             androidx.work.Data data = new androidx.work.Data.Builder()
                     .putString(DownloadWorker.KEY_URL, url)
                     .putString(DownloadWorker.KEY_UA, userAgent)
