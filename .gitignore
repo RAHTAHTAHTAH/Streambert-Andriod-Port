@@ -7,3 +7,6 @@ streambert-android/local.properties
 # Keystores - never commit signing keys
 *.keystore
 *.jks
+
+# local decoded keystore (decoded from b64 for CI/local signing)
+__keystore-local/
