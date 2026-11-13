@@ -186,8 +186,8 @@ a,
 
   /* ---- Home hero ------------------------------------------------------ */
   .hero {
-    height: min(52vh, 430px);
-    min-height: 340px;
+    height: min(44vh, 340px);
+    min-height: 280px;
   }
 
   .hero-bg {
@@ -196,50 +196,49 @@ a,
 
   .hero-gradient {
     background:
-      linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 82%, transparent) 38%, transparent 78%),
-      linear-gradient(to right, color-mix(in srgb, var(--bg) 55%, transparent) 0%, transparent 70%);
+      linear-gradient(to top, var(--bg) 0%, color-mix(in srgb, var(--bg) 86%, transparent) 50%, transparent 88%);
   }
 
   .hero-content {
-    padding: 18px 16px 22px;
+    padding: 14px 16px 16px;
     max-width: none;
     width: 100%;
     box-sizing: border-box;
   }
 
   .hero-type {
-    font-size: 10px;
-    letter-spacing: 2.5px;
-    margin-bottom: 6px;
+    font-size: 9.5px;
+    letter-spacing: 1.8px;
+    margin-bottom: 4px;
   }
 
   .hero-title {
-    font-size: 40px;
-    margin-bottom: 10px;
+    font-size: 34px;
+    margin-bottom: 6px;
   }
 
   .hero-meta {
-    font-size: 12px;
-    gap: 12px;
-    margin-bottom: 10px;
+    font-size: 11.5px;
+    gap: 10px;
+    margin-bottom: 8px;
   }
 
   .hero-overview {
-    font-size: 13px;
-    line-height: 1.5;
-    margin-bottom: 14px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    margin-bottom: 10px;
     -webkit-line-clamp: 2;
   }
 
   .hero-actions {
-    gap: 8px;
+    gap: 7px;
   }
 
   .hero-actions .btn {
     flex: 1 1 calc(50% - 4px);
     justify-content: center;
-    padding: 11px 10px;
-    font-size: 13px;
+    padding: 9px 9px;
+    font-size: 12.5px;
     white-space: nowrap;
   }
 
@@ -250,20 +249,20 @@ a,
 
   /* ---- Content sections and cards ------------------------------------ */
   .section {
-    padding: 14px 14px 4px;
+    padding: 12px 14px 2px;
   }
 
   .section-title {
-    font-size: 21px;
-    letter-spacing: 0.6px;
-    margin-bottom: 10px;
+    font-size: 19px;
+    letter-spacing: 0.4px;
+    margin-bottom: 8px;
     gap: 8px;
   }
 
   .cards-grid,
   body.compact-mode .cards-grid {
-    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 8px;
   }
 
   .card,
@@ -273,48 +272,48 @@ a,
 
   .card-info,
   body.compact-mode .card-info {
-    padding: 7px 8px 8px;
+    padding: 6px 7px 7px;
   }
 
   .card-title,
   body.compact-mode .card-title {
-    font-size: 12px;
-    margin-bottom: 2px;
+    font-size: 11.5px;
+    margin-bottom: 1px;
   }
 
   .card-year,
   body.compact-mode .card-year {
-    font-size: 10px;
+    font-size: 9.5px;
   }
 
   .card-badge {
-    top: 6px;
-    right: 6px;
+    top: 5px;
+    right: 5px;
     font-size: 9px;
     padding: 2px 4px;
   }
 
   .scroll-row {
-    gap: 10px;
+    gap: 8px;
   }
 
   .scroll-row .card {
-    width: 116px;
+    width: 112px;
   }
 
   /* Optional carousel home view: smaller than the desktop version. */
   .carousel-section {
-    padding: 10px 14px 14px;
+    padding: 8px 14px 12px;
   }
 
   .carousel-wrapper {
-    height: 250px;
+    height: 210px;
   }
 
   .carousel-poster,
   .carousel-poster--placeholder {
-    width: 138px;
-    height: 207px;
+    width: 126px;
+    height: 190px;
   }
 
   /* ---- Genre browser -------------------------------------------------- */
@@ -666,16 +665,16 @@ a,
 
   /* ---- Settings ------------------------------------------------------- */
   .sb-settings > .fade-in {
-    padding: 20px 16px 96px !important;
+    padding: 16px 16px 96px !important;
   }
 
   .sb-settings > .fade-in > div:first-child {
-    font-size: 34px !important;
-    letter-spacing: 0.5px;
+    font-size: 28px !important;
+    letter-spacing: 0.4px;
   }
 
   .sb-settings > .fade-in > div:nth-child(2) {
-    margin-bottom: 28px !important;
+    margin-bottom: 18px !important;
   }
 
   .sb-settings > div[style*="position: sticky"] {
@@ -683,7 +682,7 @@ a,
   }
 
   .sb-settings > div[style*="position: sticky"] > div {
-    padding: 8px 0 !important;
+    padding: 6px 0 !important;
   }
 
   /* Hide the "jump to section" menu and keyboard shortcut chips. */
@@ -1247,23 +1246,23 @@ body {
 
   .sb-home-logo {
     font-family: var(--font-display);
-    font-size: 27px;
+    font-size: 23px;
     line-height: 1;
-    letter-spacing: 1.6px;
+    letter-spacing: 1.4px;
     color: var(--red);
   }
 
   .sb-home-avatar {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     border: none;
     border-radius: 6px;
     background: var(--red);
     color: #ffffff;
     font-family: var(--font-display);
-    font-size: 18px;
-    line-height: 30px;
+    font-size: 16px;
+    line-height: 28px;
     text-align: center;
     cursor: pointer;
   }
@@ -1277,7 +1276,7 @@ body {
   }
 
   .sb-home-tabs {
-    gap: 20px;
+    gap: 16px;
     padding: 2px 16px 0;
     background: var(--bg);
     border-bottom: 1px solid #262626;
@@ -1286,13 +1285,13 @@ body {
   }
 
   .sb-home-tab {
-    padding: 10px 0 9px;
+    padding: 8px 0 7px;
     border: none;
     border-bottom: 2px solid transparent;
     border-radius: 0;
     background: transparent;
-    color: #b3b3b3;
-    font-size: 14px;
+    color: #a3a3a3;
+    font-size: 13.5px;
     font-weight: 700;
     letter-spacing: 0;
   }
@@ -1305,59 +1304,59 @@ body {
 
   /* ---- Hero ---------------------------------------------------------- */
   .hero {
-    height: min(60vh, 500px);
-    min-height: 370px;
+    height: min(52vh, 420px);
+    min-height: 300px;
   }
 
   .hero-content {
-    padding: 62px 18px 24px;
+    padding: 56px 18px 18px;
   }
 
   .hero-type {
     display: inline-block;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     padding: 0;
     background: none;
     color: var(--red);
-    font-size: 10px;
+    font-size: 9.5px;
     font-weight: 700;
-    letter-spacing: 2px;
+    letter-spacing: 1.6px;
   }
 
   .hero-title {
     font-family: var(--font-body);
     font-weight: 700;
-    font-size: 38px;
+    font-size: 34px;
     line-height: 1.05;
-    letter-spacing: -0.9px;
+    letter-spacing: -0.7px;
   }
 
   .hero-meta {
     color: #d2d2d2;
-    font-size: 12.5px;
-    gap: 12px;
+    font-size: 12px;
+    gap: 10px;
   }
 
   .hero-overview {
     color: #d2d2d2;
-    font-size: 13.5px;
-    line-height: 1.5;
-    -webkit-line-clamp: 3;
-    margin-bottom: 16px;
+    font-size: 12.5px;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+    margin-bottom: 12px;
   }
 
   .hero-actions {
     flex-wrap: nowrap;
-    gap: 8px;
+    gap: 7px;
   }
 
   .hero-actions .btn {
     flex: 1 1 0;
     min-width: 0;
-    padding: 12px 8px;
+    padding: 10px 8px;
     border: none;
-    border-radius: 6px;
-    font-size: 14px;
+    border-radius: 5px;
+    font-size: 13px;
     font-weight: 700;
   }
 
@@ -1367,12 +1366,12 @@ body {
   }
 
   .hero-actions .btn-secondary {
-    background: rgba(109, 109, 110, 0.7);
+    background: rgba(109, 109, 110, 0.72);
     color: #ffffff;
   }
 
   .hero-actions .btn-surprise {
-    flex: 0 0 46px;
+    flex: 0 0 40px;
     padding: 0;
     border-radius: 50%;
     font-size: 0;
@@ -1380,27 +1379,27 @@ body {
   }
 
   .hero-actions .btn-surprise svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
   }
 
   /* ---- Content rows -------------------------------------------------- */
   .section-title {
     font-family: var(--font-body);
     font-weight: 700;
-    font-size: 19px;
+    font-size: 18px;
     letter-spacing: 0;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
   }
 
   .section-subtitle {
-    margin-top: -6px;
-    font-size: 12px;
-    color: #b3b3b3;
+    margin-top: -5px;
+    font-size: 11.5px;
+    color: #a8a8a8;
   }
 
   .sb-home-wrap .section {
-    padding: 16px 0 2px;
+    padding: 12px 0 0px;
   }
 
   .sb-home-wrap .section > .section-title,
@@ -1412,7 +1411,7 @@ body {
   .sb-home-wrap .section > .cards-grid {
     display: flex;
     gap: 8px;
-    padding: 0 16px 8px;
+    padding: 0 16px 6px;
     overflow-x: auto;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
@@ -1424,29 +1423,29 @@ body {
   }
 
   .sb-home-wrap .section > .cards-grid .card {
-    flex: 0 0 112px;
-    width: 112px;
+    flex: 0 0 106px;
+    width: 106px;
     background: transparent;
     border: none;
     scroll-snap-align: start;
   }
 
   .sb-home-wrap .card-poster {
-    border-radius: 6px;
+    border-radius: 5px;
   }
 
   .sb-home-wrap .card-info {
-    padding: 6px 2px 0;
+    padding: 5px 2px 0;
   }
 
   .sb-home-wrap .card-title {
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 700;
     margin-bottom: 1px;
   }
 
   .sb-home-wrap .card-year {
-    font-size: 10.5px;
+    font-size: 10px;
   }
 
   .sb-home-wrap .card:active {
@@ -1454,11 +1453,11 @@ body {
   }
 
   .sb-home-wrap .carousel-section {
-    padding: 14px 16px 10px;
+    padding: 10px 16px 8px;
   }
 
   .sb-home-wrap .carousel-section .section-title {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   /* ---- Top 10 row ---------------------------------------------------- */
@@ -1482,9 +1481,9 @@ body {
   .sb-top10-card {
     position: relative;
     display: flex;
-    flex: 0 0 166px;
+    flex: 0 0 150px;
     align-items: flex-end;
-    height: 172px;
+    height: 160px;
     padding: 0;
     border: none;
     background: none;
@@ -1494,23 +1493,23 @@ body {
   .sb-top10-rank {
     position: relative;
     z-index: 2;
-    margin: 0 -36px -8px -8px;
+    margin: 0 -32px -8px -8px;
     color: var(--bg);
     font-family: var(--font-display);
-    font-size: 150px;
+    font-size: 120px;
     line-height: 0.8;
-    letter-spacing: -8px;
-    -webkit-text-stroke: 3px #6d6d6e;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+    letter-spacing: -6px;
+    -webkit-text-stroke: 2.5px #6d6d6e;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
   }
 
   .sb-top10-poster {
     position: relative;
     z-index: 1;
     display: block;
-    flex: 0 0 112px;
-    width: 112px;
-    height: 168px;
+    flex: 0 0 106px;
+    width: 106px;
+    height: 154px;
     border-radius: 4px;
     overflow: hidden;
     background: var(--surface3);
@@ -1528,10 +1527,10 @@ body {
     align-items: center;
     justify-content: center;
     height: 100%;
-    padding: 8px;
+    padding: 7px;
     box-sizing: border-box;
     color: var(--text3);
-    font-size: 11px;
+    font-size: 10.5px;
     text-align: center;
   }
 
